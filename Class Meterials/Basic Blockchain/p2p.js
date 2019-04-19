@@ -19,8 +19,7 @@ log('peers - ', peers)
 log('connecting to peers...')
 const myIp = toLocalIp(me)
 const peerIps = getPeerIps(peers)
-// log(myIp);
-// log(peerIps);
+
 topology(myIp, peerIps).on('connection', (socket, peerIp) => {
     const peerPort = extractPortFromIp(peerIp)
     log('connected to peer - ', peerPort)
