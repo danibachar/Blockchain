@@ -51,8 +51,8 @@ class Blockchain {
 
     }
 
-    minePendingTransactions(miningReward) {
-        const rewardTx = new Transaction(null, miningRewardAddress, this.miningReward);
+    minePendingTransactions(miningRewardAdress) {
+        const rewardTx = new Transaction(null, miningRewardAdress, this.miningReward);
         this.pendingTransactions.push(rewardTx);
         let block = new Block(Date.now(), this.pendingTransactions, this.getLatestBlock().hash);
         block.mineBlock(this.difficulty);
@@ -113,3 +113,4 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 module.exports.Block = Block;
+module.exports.Transaction = Transaction;
