@@ -29,9 +29,6 @@ Contains 2 dashboards:
 
  - Run ```pip install -r requirements.txt```
 
-## Linux
-- Run ```python start.py lin```
-
 ## Mac
 - Run ```python start.py``` - defualt will be for Mac
 
