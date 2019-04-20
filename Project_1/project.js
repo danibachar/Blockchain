@@ -58,17 +58,6 @@ topology(FullNode.netAddress, Peers.map(p => p.netAddress)).on('connection', (so
         const msg = formatMessage(message)
         //broadcast message to everyone
         socket.write(msg)
-        // if (sockets[receiverPeer]) { //message to specific peer
-        //     if (peerPort === receiverPeer) { //write only once
-        //         const msg = formatMessage(extractMessageToSpecificPeer(message))
-        //         log('1:'+msg)
-        //         sockets[receiverPeer].write(msg)
-        //     }
-        // } else { //broadcast message to everyone
-        //   const msg = formatMessage(message)
-        //   log('2:'+msg)
-        //   socket.write(msg)
-        // }
     })
     //print data when received
     socket.on('data', data => {
