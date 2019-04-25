@@ -128,7 +128,7 @@
               <div class="row">
                   <label class="col-sm-12">Sender Address:</label>
                   <div class="col-sm-12">
-                    <input type="text" name="sender_address" id="confirmation_sender_address" rows="2" class="form-control">
+                    <input type="text" name="sender_address" rows="2" class="form-control">
 
                   </div>
                 </div>
@@ -136,28 +136,28 @@
                 <div class="row">
                   <label class="col-sm-12">Recipient Address:</label>
                   <div class="col-sm-12">
-                    <input type="text" name="recipient_address" id="confirmation_recipient_address" rows="2" class="form-control">
+                    <input type="text" name="recipient_address" rows="2" class="form-control">
                   </div>
                 </div>
 
                 <div class="row">
                   <label class="col-sm-12">Amount to Send:</label>
                   <div class="col-sm-12">
-                    <input type="text" name="amount" id="confirmation_amount" rows="2" class="form-control">
+                    <input type="text" name="amount" rows="2" class="form-control">
                   </div>
                 </div>
 
                 <div class="row">
                   <label class="col-sm-12">Timestamp:</label>
                   <div class="col-sm-12">
-                    <input type="text" name="timestamp" id="confirmation_timestamp" rows="2" class="form-control">
+                    <input type="text" name="timestamp" rows="2" class="form-control">
                   </div>
                 </div>
 
                 <div class="row">
                   <label class="col-sm-12">Transaction Signature:</label>
                   <div class="col-sm-12">
-                    <input type="text" name="signature" id="transaction_signature" rows="2" class="form-control">
+                    <input type="text" name="signature" rows="2" class="form-control">
                   </div>
                 </div>
 
@@ -461,7 +461,7 @@
               dataType : 'json',
               data: $('#transaction_form').serialize(),
               success: function(response){
-                console.log(JSON.stringify(response))
+
                 document.getElementById("confirmation_sender_address").value = response["transaction"]["sender_address"];
                 document.getElementById("confirmation_recipient_address").value = response["transaction"]["recipient_address"];
                 document.getElementById("confirmation_amount").value = response["transaction"]["amount"];

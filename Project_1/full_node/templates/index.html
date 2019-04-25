@@ -46,6 +46,7 @@
         <input type="button" id="mine_button" class="btn btn-primary btn-lg" value="Mine">
         <input type="button" id="save_to_disk" class="btn btn-primary btn-lg" value="Save Blockchain">
         <input type="button" id="refresh_blockchain" class="btn btn-primary btn-lg" value="Consensus">
+
       </div>
 
     </div>
@@ -87,8 +88,8 @@
                               response['transactions'][i]["recipient_address"],
                               response['transactions'][i]["sender_address"],
                               response['transactions'][i]["amount"],
-                              response["chain"][i]["transactions"][j]["signature"],
-                              response["chain"][i]["transactions"][j]["timestamp"]];
+                              response["transactions"][i]["signature"],
+                              response["transactions"][i]["timestamp"]];
 
                   transactions.push(transaction);
 
@@ -198,7 +199,7 @@
             url: "/nodes/resolve",
             type: "GET",
             success: function(response){
-
+                console.log(response)
               window.location.reload();
 
             },
@@ -221,7 +222,6 @@
             }
           });
         });
-
 
 
       })
