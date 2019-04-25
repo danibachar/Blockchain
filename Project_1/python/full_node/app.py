@@ -49,14 +49,11 @@ def balance(address):
 @app.route('/block/get/<tx_signature>', methods=['GET'])
 def get_block_header(tx_signature):
     response = {}
-    for block in blockchain.chain:
-        # look for the blo
-        header = block.get('header')
-        signatures = header.get('transactions_signatures')
-        print('signatures = '.format(signatures))
-        if tx_signature in signatures:
-            response['header'] = header
     
+    header = blockchain.get_block_header_by(tx_signature)
+    if header:
+        resonse['header'] = header
+
     return jsonify(response), 200
 
 @app.route('/transactions/get', methods=['GET'])

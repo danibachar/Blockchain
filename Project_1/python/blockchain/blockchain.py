@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from merkletools import *
+from bloom_filter import BloomFilter
 import binascii
-
 import Crypto
 import Crypto.Random
 from Crypto.Hash import SHA
@@ -21,6 +21,8 @@ MINING_DIFFICULTY = 4
 
 #KEYS
 TRANSACTIONS_SIGNATURES = 'transactions_signatures'
+BLOOM_FILTER = 'bloom_filter'
+BLOCK_HEADER_KEY = 'header'
 
 class Transaction:
 
@@ -117,7 +119,7 @@ class BlockchainSPV(Base):
         # For now asking full noode - todo change to hold it myself
         res = requests.get('http://127.0.0.1:5000/block/get/' +signature)
         print(res.json())
-        return res.json().get('header')
+        return res.json().get(BLOCK_HEADER_KEY)
 
 
 # Full Node
@@ -146,12 +148,15 @@ class Blockchain(Base):
                                     'recipient_address': recipient_address,
                                     'value': value})
 
+        if self.is_transaction_exsits(signature):
+            False
+
         #Reward for mining a block
         if sender_address == MINING_SENDER:
             transaction['signature'] = signature
             self.pending_transactions.append(transaction)
             return len(self.chain) + 1
-        #Manages transactions from wallet to another wallet
+        # Manages transactions from wallet to another wallet
         else:
             transaction_verification = self.verify_transaction_signature(sender_address, signature, transaction)
             if transaction_verification:
@@ -161,6 +166,33 @@ class Blockchain(Base):
             else:
                 return False
 
+    def get_block_header_by(self, trans_signatues):
+
+        for block in blockchain.chain:
+            # look for the blo
+            header = block.get('header')
+            signatures = header.get('transactions_signatures')
+            print('signatures = '.format(signatures))
+            if tx_signature in signatures:
+                response['header'] = header
+
+    def is_transaction_exsits(self, trans_signatues):
+        is_exist = False
+        for block in self.chain:
+            bloom = block.get(BLOOM_FILTER)
+            if not bloom:
+                continue
+            in_bloom = trans_signatues in bloom
+            if not in_bloom:
+                continue
+            # Lets make sure
+            header = block.get(BLOCK_HEADER_KEY)
+            if not header:
+                continue
+            signatures = header.get(TRANSACTIONS_SIGNATURES)
+            is_exist = trans_signatues in signatures
+
+        return is_exist
 
     def create_block(self, nonce, previous_hash):
         """
@@ -169,7 +201,7 @@ class Blockchain(Base):
         """
         oldest_pending_tx = self.pending_transactions[:4]
 
-                # Merkle Tree of the blockchain
+        # Merkle Tree of the blockchain
         mt = MerkleTools()
         # Adding transactions signatures as leaves
         signatures = list(map(lambda tx: tx.get('signature'), oldest_pending_tx))
@@ -178,8 +210,12 @@ class Blockchain(Base):
         # Check Bloom Filter support
         mt.make_tree()
 
+        bloom = BloomFilter(max_elements=10000, error_rate=0.1)
+        for s in signatures:
+            bloom.add(s)
+
         block = {
-                'header': {
+                BLOCK_HEADER_KEY: {
                     'block_number': len(self.chain) + 1,
                     'timestamp': time(),
                     'merkleRoot': mt.get_merkle_root(),
@@ -189,6 +225,7 @@ class Blockchain(Base):
                     TRANSACTIONS_SIGNATURES: signatures
                 },
                 'transactions': oldest_pending_tx,
+                BLOOM_FILTER: bloom,
                 }
 
         self.pending_transactions = self.pending_transactions[4:]
