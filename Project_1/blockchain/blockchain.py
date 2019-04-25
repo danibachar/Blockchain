@@ -10,27 +10,33 @@ from Crypto.Signature import PKCS1_v1_5
 
 import hashlib
 import json
-from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 import requests
+from datetime import datetime
 
 MINING_SENDER = "THE BLOCKCHAIN"
 MINING_REWARD = 1
 MINING_DIFFICULTY = 4
 
 #KEYS
+# BLOCK
+TRANSACTIONS = 'transactions'
+BLOCK_HEADER_KEY = 'header'
+# HEADER
 TRANSACTIONS_SIGNATURES = 'transactions_signatures'
 BLOOM_FILTER = 'bloom_filter'
-BLOCK_HEADER_KEY = 'header'
+MERKLE_ROOT_KEY = 'merkleRoot'
+
 
 class Transaction:
 
-    def __init__(self, sender_address, sender_private_key, recipient_address, value):
+    def __init__(self, sender_address, recipient_address, amount,  timestamp=None, signature=None):
         self.sender_address = sender_address
-        self.sender_private_key = sender_private_key
         self.recipient_address = recipient_address
-        self.value = value
+        self.amount = amount
+        self.timestamp = timestamp if timestamp else str(datetime.now())
+        self.signature = signature
 
     def __getattr__(self, attr):
         return self.data[attr]
@@ -38,26 +44,75 @@ class Transaction:
     def to_dict(self):
         return OrderedDict({'sender_address': self.sender_address,
                             'recipient_address': self.recipient_address,
-                            'value': self.value})
+                            'amount': self.amount,
+                            'timestamp': self.timestamp,
+                            'signature': self.signature})
+    def calc_hash(self):
+        return SHA.new(str({'sender_address': self.sender_address,
+                            'recipient_address': self.recipient_address,
+                            'amount': self.amount,
+                            'timestamp': self.timestamp}).encode('utf8'))
+    def is_valid(self):
+        public_key = RSA.importKey(binascii.unhexlify(self.sender_address))
+        verifier = PKCS1_v1_5.new(public_key)
+        h = self.calc_hash()
+        return verifier.verify(h, binascii.unhexlify(self.signature))
 
-    def sign_transaction(self):
+    def sign_transaction(self, sender_private_key):
         """
         Sign transaction with private key
         """
-        private_key = RSA.importKey(binascii.unhexlify(self.sender_private_key))
+        if self.signature :
+            return self.signature
+
+        private_key = RSA.importKey(binascii.unhexlify(sender_private_key))
         signer = PKCS1_v1_5.new(private_key)
-        h = SHA.new(str(self.to_dict()).encode('utf8'))
-        return binascii.hexlify(signer.sign(h)).decode('ascii')
+        h = self.calc_hash()
+        self.signature = binascii.hexlify(signer.sign(h)).decode('ascii')
+        return self.signature
+
+class BlockHeader:
+        def __init__(self, payload):
+            self.block_number = payload.get('block_number')
+            self.timestamp = payload.get('timestamp')
+            self.merkleRoot = payload.get('merkleRoot')
+            self.nonce = payload.get('nonce')
+            self.previous_hash = payload.get('previous_hash')
+            self.num_of_transactions = payload.get('num_of_transactions')
+            self.signatures = payload.get('signatures')
+
+        def __getattr__(self, attr):
+            return self.data[attr]
+
+        def to_dict(self):
+            return OrderedDict({'block_number': self.block_number,
+                                'timestamp': self.timestamp,
+                                'nonce': self.nonce,
+                                'merkleRoot': self.merkleRoot,
+                                'previous_hash': self.timestamp,
+                                'num_of_transactions': self.num_of_transactions,
+                                'signatures': self.signatures})
+
+class Block:
+    def __init__(self, payload):
+        self.header = BlockHeader(payload.get(BLOCK_HEADER_KEY))
+        self.transactions = list(map(lambda tx: Transaction(tx), payload.get(TRANSACTIONS)))
+
+    def __getattr__(self, attr):
+        return self.data[attr]
+
+    def to_dict(self):
+        return OrderedDict({BLOCK_HEADER_KEY: self.header.to_dict(),
+                            TRANSACTIONS: list(map(lambda tx: tx.to_dict(), self.transactions))})
 
 class Base:
 
     def __init__(self):
-        self.chain = []
-        self.nodes = set()
-        #Generate random number to be used as node_id
-        self.node_id = str(uuid4()).replace('-', '')
+        self.chain = [] # Blocks for Full Node, BlockHeaders for SPVs
+        self.nodes = set() # Nighebors
+        self.node_id = str(uuid4()).replace('-', '') # My id
         #Create genesis block
-        self.create_block(0, '00')
+        self.create_block(0, '00') # Gen
 
     def register_node(self, node_url):
         """
@@ -77,7 +132,6 @@ class Base:
         """
         Create a SHA-256 hash of a block
         """
-
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
@@ -93,25 +147,25 @@ class BlockchainSPV(Base):
     def create_block(self, nonce, previous_hash):
         pass
 
+    # Validating Using Headers only! - using signatures
     def validate_transaction(self, transaction):
-        #TODO:-
-        # get header from full node - need to change to hold it my self
-        # create merkle tree with signatures from header
-        # proof with that!
-        signature = transaction.sign_transaction()
+        is_valid = False
+        # First check!
+        if not transaction.is_valid():
+            return  is_valid
+        signature = transaction.signature
         header = self.get_block_header_for(signature)
-        print(header)
+        if not header:
+            return is_valid
+        # Reconstracting the Merkle tree using leaves only
         mt = MerkleTools()
-        # Adding transactions signatures as leaves
         signatures = header.get(TRANSACTIONS_SIGNATURES)
         mt.add_leaf(signatures, True)
-        # Check Bloom Filter support
         mt.make_tree()
-        # Find transaction headers
-        print('my tran sign = {}'.format(signature))
+        # Merkle Proof!
         index = signature.index(signature)
-        print('looking for index = {}'.format(index))
-        is_valid = mt.validate_proof(mt.get_proof(index), mt.get_leaf(index), mt.get_merkle_root())
+        # Using originale root! nad not new one which validate indeed!
+        is_valid = mt.validate_proof(mt.get_proof(index), mt.get_leaf(index), header.get(MERKLE_ROOT_KEY))
         return is_valid
 
 
@@ -129,52 +183,35 @@ class Blockchain(Base):
         self.pending_transactions = []
         Base.__init__(self)
 
-    def verify_transaction_signature(self, sender_address, signature, transaction):
-        """
-        Check that the provided signature corresponds to transaction
-        signed by the public key (sender_address)
-        """
-        public_key = RSA.importKey(binascii.unhexlify(sender_address))
-        verifier = PKCS1_v1_5.new(public_key)
-        h = SHA.new(str(transaction).encode('utf8'))
-        return verifier.verify(h, binascii.unhexlify(signature))
 
-
-    def submit_transaction(self, sender_address, recipient_address, value, signature):
-        """
-        Add a transaction to pending transactions array if the signature verified
-        """
-        transaction = OrderedDict({'sender_address': sender_address,
-                                    'recipient_address': recipient_address,
-                                    'value': value})
-
-        if self.is_transaction_exsits(signature):
+    def submit_transaction(self, transaction):
+        # Bloom Filter Usage
+        if self.is_transaction_exsits(transaction.signature):
             False
 
         #Reward for mining a block
-        if sender_address == MINING_SENDER:
-            transaction['signature'] = signature
-            self.pending_transactions.append(transaction)
+        if transaction.sender_address == MINING_SENDER:
+            self.pending_transactions.append(transaction.to_dict())
             return len(self.chain) + 1
         # Manages transactions from wallet to another wallet
         else:
-            transaction_verification = self.verify_transaction_signature(sender_address, signature, transaction)
-            if transaction_verification:
-                transaction['signature'] = signature
-                self.pending_transactions.append(transaction)
+            if transaction.is_valid():
+                self.pending_transactions.append(transaction.to_dict())
                 return len(self.chain) + 1
             else:
                 return False
 
-    def get_block_header_by(self, trans_signatues):
+    def get_block_header_by(self, signature):
 
-        for block in blockchain.chain:
+        for block in self.chain:
             # look for the blo
             header = block.get('header')
-            signatures = header.get('transactions_signatures')
+            signatures = header.get(TRANSACTIONS_SIGNATURES)
             print('signatures = '.format(signatures))
-            if tx_signature in signatures:
-                response['header'] = header
+            if signature in signatures:
+                return header
+
+        return None
 
     def is_transaction_exsits(self, trans_signatues):
         is_exist = False
@@ -210,14 +247,14 @@ class Blockchain(Base):
         # Check Bloom Filter support
         mt.make_tree()
 
-        bloom = BloomFilter(max_elements=10000, error_rate=0.1)
-        for s in signatures:
-            bloom.add(s)
+        # bloom = BloomFilter(max_elements=10000, error_rate=0.1)
+        # for s in signatures:
+        #     bloom.add(s)
 
         block = {
                 BLOCK_HEADER_KEY: {
                     'block_number': len(self.chain) + 1,
-                    'timestamp': time(),
+                    'timestamp': str(datetime.now()),
                     'merkleRoot': mt.get_merkle_root(),
                     'nonce': nonce,
                     'previous_hash': previous_hash,
@@ -225,7 +262,7 @@ class Blockchain(Base):
                     TRANSACTIONS_SIGNATURES: signatures
                 },
                 'transactions': oldest_pending_tx,
-                BLOOM_FILTER: bloom,
+                # BLOOM_FILTER: bloom,
                 }
 
         self.pending_transactions = self.pending_transactions[4:]
@@ -258,13 +295,12 @@ class Blockchain(Base):
     def get_balance_for_address(self, address):
         balance = 0;
         for block in self.chain:
-            for tx in block.get('transactions'):
+            for tx in block.get('transactions', []):
                 if tx.get('sender_address') == address:
-                    balance -= float(tx.get('value'))
+                    balance -= float(tx.get('amount', 0))
                 if tx.get('recipient_address') == address:
-                    balance += float(tx.get('value'))
-
-        return balance;
+                    balance += float(tx.get('amount', 0))
+        return balance
 
     def valid_chain(self, chain):
         """
@@ -275,7 +311,7 @@ class Blockchain(Base):
 
         while current_index < len(chain):
             block = chain[current_index]
-            if blockget('previous_hash',None) != self.hash(last_block):
+            if block.get('previous_hash',None) != self.hash(last_block):
                 return False
 
             # Check that the Proof of Work is correct
@@ -283,7 +319,7 @@ class Blockchain(Base):
             transactions = block['transactions'][:-1]
 
             # Need to make sure that the dictionary is ordered. Otherwise we'll get a different hash
-            transaction_elements = ['sender_address', 'recipient_address', 'value', 'signature']
+            transaction_elements = ['sender_address', 'recipient_address', 'amount', 'signature']
             transactions = [OrderedDict((k, transaction[k]) for k in transaction_elements) for transaction in transactions]
 
             if not self.valid_proof(transactions, block['previous_hash'], block['nonce'], MINING_DIFFICULTY):

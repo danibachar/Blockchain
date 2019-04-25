@@ -100,9 +100,15 @@ if not open_gui:
     cleanup(nodes_porcesses)
 
 # Waiting for process to kill
-for p in nodes_porcesses:
+
+def get_process_out_put(p):
     for line in iter(p.stdout.readline, b''):
-        print(line)
-    # p.wait()
+        yield line
+    p.stdout.close()
+    p.wait()
+
+for p in nodes_porcesses:
+    out = get_process_out_put(p)
+    print(out)
 exit_codes = [p.wait() for p in nodes_porcesses]
-print('nodes and client processes exit code = {}'.format(exit_codes))
+# print('nodes and client processes exit code = {}'.format(exit_codes))

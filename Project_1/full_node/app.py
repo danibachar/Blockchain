@@ -2,7 +2,7 @@ import sys
 import os
 p = os.getcwd()
 sys.path.insert(0, p)
-from blockchain.blockchain import Blockchain ,MINING_SENDER, MINING_REWARD
+from blockchain.blockchain import Transaction, Blockchain ,MINING_SENDER, MINING_REWARD
 import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
@@ -31,7 +31,9 @@ def new_transaction():
     if not all(k in values for k in required):
         return 'Missing values', 400
     # Create a new Transaction
-    transaction_result = blockchain.submit_transaction(values['sender_address'], values['recipient_address'], values['amount'], values['signature'])
+    transaction = Transaction(**values)
+    # values['sender_address'], values['recipient_address'], values['amount'], values['signature']
+    transaction_result = blockchain.submit_transaction(transaction)
 
     if transaction_result == False:
         response = {'message': 'Invalid Transaction!'}
@@ -40,7 +42,7 @@ def new_transaction():
         response = {'message': 'Transaction will be added to Block '+ str(transaction_result)}
         return jsonify(response), 201
 
-@app.route('/balance/<address>', methods=['Get'])
+@app.route('/balance/<address>', methods=['GET'])
 def balance(address):
     balance = blockchain.get_balance_for_address(address)
     response = {'balance': balance}
@@ -52,7 +54,7 @@ def get_block_header(tx_signature):
     
     header = blockchain.get_block_header_by(tx_signature)
     if header:
-        resonse['header'] = header
+        response['header'] = header
 
     return jsonify(response), 200
 
@@ -91,9 +93,12 @@ def mine():
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.chain[-1]
     nonce = blockchain.proof_of_work()
-
+    reward_transaction = Transaction(sender_address=MINING_SENDER,
+                                     recipient_address=blockchain.node_id,
+                                     amount=MINING_REWARD,
+                                     signature="")
     # We must receive a reward for finding the proof.
-    blockchain.submit_transaction(sender_address=MINING_SENDER, recipient_address=blockchain.node_id, value=MINING_REWARD, signature="")
+    blockchain.submit_transaction(reward_transaction)
 
     # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)

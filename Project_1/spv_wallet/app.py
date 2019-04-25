@@ -15,12 +15,17 @@ app = Flask(__name__)
 
 spv = BlockchainSPV()
 
+Cache = {}
+
 @app.route('/')
 def index():
 	return render_template('./index.html')
 
-@app.route('/wallet/new', methods=['GET'])
+WALLET_END_POINT = '/wallet'
+@app.route(WALLET_END_POINT, methods=['GET'])
 def new_wallet():
+	if Cache.get(WALLET_END_POINT):
+		return Cache[WALLET_END_POINT], 200
 	random_gen = Crypto.Random.new().read
 	private_key = RSA.generate(1024, random_gen)
 	public_key = private_key.publickey()
@@ -28,18 +33,13 @@ def new_wallet():
 		'private_key': binascii.hexlify(private_key.exportKey(format='DER')).decode('ascii'),
 		'public_key': binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii')
 	}
-
-	return jsonify(response), 200
+	Cache[WALLET_END_POINT] = jsonify(response)
+	return Cache[WALLET_END_POINT], 200
 
 @app.route('/validate/transaction', methods=['POST'])
 def validate_transaction():
 
-	sender_address = request.form['sender_address']
-	sender_private_key = request.form['sender_private_key']
-	recipient_address = request.form['recipient_address']
-	value = request.form['amount']
-
-	transaction = Transaction(sender_address, sender_private_key, recipient_address, value)
+	transaction = Transaction(**request.form)
 	response = {'is_valid': spv.validate_transaction(transaction)}
 
 	return jsonify(response), 200
@@ -48,13 +48,15 @@ def validate_transaction():
 def generate_transaction():
 
 	sender_address = request.form['sender_address']
-	sender_private_key = request.form['sender_private_key']
 	recipient_address = request.form['recipient_address']
-	value = request.form['amount']
+	amount = request.form['amount']
 
-	transaction = Transaction(sender_address, sender_private_key, recipient_address, value)
+	transaction = Transaction(sender_address, recipient_address, amount)
 
-	response = {'transaction': transaction.to_dict(), 'signature': transaction.sign_transaction()}
+	sender_private_key = request.form['sender_private_key']
+	signature = transaction.sign_transaction(sender_private_key)
+
+	response = {'transaction': transaction.to_dict()}
 
 	return jsonify(response), 200
 
