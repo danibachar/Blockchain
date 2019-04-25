@@ -46,6 +46,19 @@ def balance(address):
     response = {'balance': balance}
     return jsonify(response), 200
 
+@app.route('/block/get/<tx_signature>', methods=['GET'])
+def get_block_header(tx_signature):
+    response = {}
+    for block in blockchain.chain:
+        # look for the blo
+        header = block.get('header')
+        signatures = header.get('transactions_signatures')
+        print('signatures = '.format(signatures))
+        if tx_signature in signatures:
+            response['header'] = header
+    
+    return jsonify(response), 200
+
 @app.route('/transactions/get', methods=['GET'])
 def get_transactions():
     transactions = blockchain.pending_transactions
@@ -91,10 +104,10 @@ def mine():
 
     response = {
         'message': "New Block Forged",
-        'block_number': block.get('block_number'),
+        'block_number': block.get('header').get('block_number'),
         'transactions': block.get('transactions'),
-        'nonce': block.get('nonce'),
-        'previous_hash': block.get('previous_hash'),
+        'nonce': block.get('header').get('nonce'),
+        'previous_hash': block.get('header').get('previous_hash'),
     }
     return jsonify(response), 200
 

@@ -19,14 +19,8 @@ MINING_SENDER = "THE BLOCKCHAIN"
 MINING_REWARD = 1
 MINING_DIFFICULTY = 4
 
-def sortOD(od):
-    res = OrderedDict()
-    for k, v in sorted(od.items()):
-        if isinstance(v, dict):
-            res[k] = sortOD(v)
-        else:
-            res[k] = v
-    return res
+#KEYS
+TRANSACTIONS_SIGNATURES = 'transactions_signatures'
 
 class Transaction:
 
@@ -97,6 +91,33 @@ class BlockchainSPV(Base):
     def create_block(self, nonce, previous_hash):
         pass
 
+    def validate_transaction(self, transaction):
+        #TODO:-
+        # get header from full node - need to change to hold it my self
+        # create merkle tree with signatures from header
+        # proof with that!
+        signature = transaction.sign_transaction()
+        header = self.get_block_header_for(signature)
+        print(header)
+        mt = MerkleTools()
+        # Adding transactions signatures as leaves
+        signatures = header.get(TRANSACTIONS_SIGNATURES)
+        mt.add_leaf(signatures, True)
+        # Check Bloom Filter support
+        mt.make_tree()
+        # Find transaction headers
+        print('my tran sign = {}'.format(signature))
+        index = signature.index(signature)
+        print('looking for index = {}'.format(index))
+        is_valid = mt.validate_proof(mt.get_proof(index), mt.get_leaf(index), mt.get_merkle_root())
+        return is_valid
+
+
+    def get_block_header_for(self, signature):
+        # For now asking full noode - todo change to hold it myself
+        res = requests.get('http://127.0.0.1:5000/block/get/' +signature)
+        print(res.json())
+        return res.json().get('header')
 
 
 # Full Node
@@ -105,7 +126,6 @@ class Blockchain(Base):
     def __init__(self):
         self.pending_transactions = []
         Base.__init__(self)
-
 
     def verify_transaction_signature(self, sender_address, signature, transaction):
         """
@@ -128,12 +148,14 @@ class Blockchain(Base):
 
         #Reward for mining a block
         if sender_address == MINING_SENDER:
+            transaction['signature'] = signature
             self.pending_transactions.append(transaction)
             return len(self.chain) + 1
         #Manages transactions from wallet to another wallet
         else:
             transaction_verification = self.verify_transaction_signature(sender_address, signature, transaction)
             if transaction_verification:
+                transaction['signature'] = signature
                 self.pending_transactions.append(transaction)
                 return len(self.chain) + 1
             else:
@@ -147,13 +169,27 @@ class Blockchain(Base):
         """
         oldest_pending_tx = self.pending_transactions[:4]
 
-        block = {'block_number': len(self.chain) + 1,
-                'timestamp': time(),
-                'transactions': oldest_pending_tx,
-                'nonce': nonce,
-                'previous_hash': previous_hash}
+                # Merkle Tree of the blockchain
+        mt = MerkleTools()
+        # Adding transactions signatures as leaves
+        signatures = list(map(lambda tx: tx.get('signature'), oldest_pending_tx))
+        print('adding transactions to mr - {}'.format(signatures))
+        mt.add_leaf(signatures, True)
+        # Check Bloom Filter support
+        mt.make_tree()
 
-        block['hash'] = self.hash(block)
+        block = {
+                'header': {
+                    'block_number': len(self.chain) + 1,
+                    'timestamp': time(),
+                    'merkleRoot': mt.get_merkle_root(),
+                    'nonce': nonce,
+                    'previous_hash': previous_hash,
+                    'num_of_transactions':  len(oldest_pending_tx),
+                    TRANSACTIONS_SIGNATURES: signatures
+                },
+                'transactions': oldest_pending_tx,
+                }
 
         self.pending_transactions = self.pending_transactions[4:]
 
@@ -202,8 +238,6 @@ class Blockchain(Base):
 
         while current_index < len(chain):
             block = chain[current_index]
-            if block.get('hash',None) != self.hash(block):
-                return False
             if blockget('previous_hash',None) != self.hash(last_block):
                 return False
 
@@ -212,7 +246,7 @@ class Blockchain(Base):
             transactions = block['transactions'][:-1]
 
             # Need to make sure that the dictionary is ordered. Otherwise we'll get a different hash
-            transaction_elements = ['sender_address', 'recipient_address', 'value']
+            transaction_elements = ['sender_address', 'recipient_address', 'value', 'signature']
             transactions = [OrderedDict((k, transaction[k]) for k in transaction_elements) for transaction in transactions]
 
             if not self.valid_proof(transactions, block['previous_hash'], block['nonce'], MINING_DIFFICULTY):

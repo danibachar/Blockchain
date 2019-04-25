@@ -40,10 +40,7 @@ def validate_transaction():
 	value = request.form['amount']
 
 	transaction = Transaction(sender_address, sender_private_key, recipient_address, value)
-
-	response = {'transaction': transaction.to_dict(), 'signature': transaction.sign_transaction()}
-
-
+	response = {'is_valid': spv.validate_transaction(transaction)}
 
 	return jsonify(response), 200
 
