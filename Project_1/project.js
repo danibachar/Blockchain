@@ -3,9 +3,6 @@ const { Blockchain, Transaction } = require('./blockchain');
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 
-// Create new instance of Blockchain class
-const nekoCoin = new Blockchain();
-
 const {
     stdin,
     exit,
@@ -30,6 +27,8 @@ class Node {
    */
    //'7c4c45907dec40c91bab3480c39032e90049f1a44f3e18c3e07c23e3273995cf'
   constructor(port, hash) {
+    // Create new instance of Blockchain class
+    this.nekoCoin = new Blockchain();
     this.port = port
     this.netAddress = toLocalIp(port, hash);
     this.privateKey = ec.keyFromPrivate(hash);

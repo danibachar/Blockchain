@@ -27,7 +27,7 @@ Contains 2 dashboards:
 
 ## First install requirements
 
- - Run ```pip install -r requirements.txt```
+ - Run ```pip3 install -r requirements.txt```
 
 ## Mac
 - Run ```python start.py``` - defualt will be for Mac
