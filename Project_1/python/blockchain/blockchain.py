@@ -1,5 +1,5 @@
 from collections import OrderedDict
-import merkletools
+from merkletools import *
 import binascii
 
 import Crypto
