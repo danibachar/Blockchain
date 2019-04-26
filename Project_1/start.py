@@ -4,6 +4,7 @@ import subprocess
 import requests
 import time
 import platform
+from io import StringIO
 
 def cleanup(process):
     print('Clenup - we had some fialure in the init process')
@@ -26,7 +27,7 @@ def init_nodes(nodes_urls, client_urls):
         print('runing full node - {} from {}'.format(port, full_node_script_path))
         full_node_process = subprocess\
             .Popen(['python', full_node_script_path, '-p', port],
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                 stdout=sys.stdout, stderr=sys.stderr)
         processes.append(full_node_process)
 
     # 2 - SPV
@@ -36,7 +37,7 @@ def init_nodes(nodes_urls, client_urls):
         print('runing spv - {} from {}'.format(port, spv_node_script_path))
         p = subprocess \
             .Popen(['python', spv_node_script_path, '-p', port],
-                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                   stdout=sys.stdout, stderr=sys.stderr)
         processes.append(p)
 
     return processes
@@ -117,7 +118,7 @@ nodes_porcesses = init_nodes(nodes_urls, client_urls)
 
 # Wiating for nodes and client to initielize
 print('Waiting for nodes to come up!')
-time.sleep(10)
+time.sleep(5)
 
 register_and_validate_nodes(nodes_porcesses, nodes_urls)
 
@@ -127,15 +128,5 @@ if not open_gui:
     print('Please open Chrome on these websites - {}'.format(nodes_urls + client_urls))
 
 # Waiting for process to kill
-
-def get_process_out_put(p):
-    for line in iter(p.stdout.readline, b''):
-        yield line
-    p.stdout.close()
-    p.wait()
-
-for p in nodes_porcesses:
-    out = get_process_out_put(p)
-    print(out)
 exit_codes = [p.wait() for p in nodes_porcesses]
 # print('nodes and client processes exit code = {}'.format(exit_codes))

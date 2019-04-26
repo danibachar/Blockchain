@@ -215,18 +215,22 @@ class Blockchain(Base):
 
     def is_transaction_exsits(self, trans_signatues):
         is_exist = False
+        if len(trans_signatues) == 0:
+            return is_exist
         for block in self.chain:
-            bloom = block.get(BLOOM_FILTER)
-            if not bloom:
-                continue
-            in_bloom = trans_signatues in bloom
-            if not in_bloom:
-                continue
-            # Lets make sure
             header = block.get(BLOCK_HEADER_KEY)
             if not header:
                 continue
             signatures = header.get(TRANSACTIONS_SIGNATURES)
+            bloom = BloomFilter(max_elements=10000, error_rate=0.1)
+            for s in signatures:
+                if len(s)>0:
+                    print('add sing = {}'.format(s))
+                    bloom.add(s)
+            in_bloom = trans_signatues in bloom
+            if not in_bloom:
+                continue
+            # Lets make sure
             is_exist = trans_signatues in signatures
 
         return is_exist
@@ -242,14 +246,10 @@ class Blockchain(Base):
         mt = MerkleTools()
         # Adding transactions signatures as leaves
         signatures = list(map(lambda tx: tx.get('signature'), oldest_pending_tx))
-        print('adding transactions to mr - {}'.format(signatures))
         mt.add_leaf(signatures, True)
         # Check Bloom Filter support
         mt.make_tree()
 
-        # bloom = BloomFilter(max_elements=10000, error_rate=0.1)
-        # for s in signatures:
-        #     bloom.add(s)
 
         block = {
                 BLOCK_HEADER_KEY: {
@@ -262,7 +262,6 @@ class Blockchain(Base):
                     TRANSACTIONS_SIGNATURES: signatures
                 },
                 'transactions': oldest_pending_tx,
-                # BLOOM_FILTER: bloom,
                 }
 
         self.pending_transactions = self.pending_transactions[4:]
@@ -311,7 +310,9 @@ class Blockchain(Base):
 
         while current_index < len(chain):
             block = chain[current_index]
+            print(self.chain)
             if block.get('previous_hash',None) != self.hash(last_block):
+                print('prev hash test fail')
                 return False
 
             # Check that the Proof of Work is correct
@@ -323,6 +324,7 @@ class Blockchain(Base):
             transactions = [OrderedDict((k, transaction[k]) for k in transaction_elements) for transaction in transactions]
 
             if not self.valid_proof(transactions, block['previous_hash'], block['nonce'], MINING_DIFFICULTY):
+                print('valid_proof test fail')
                 return False
 
             last_block = block
@@ -345,15 +347,20 @@ class Blockchain(Base):
         for node in neighbours:
             print('http://' + node + '/chain')
             response = requests.get('http://' + node + '/chain')
-
+            j = response.json()
+            print('chain res = {}'.format(j))
             if response.status_code == 200:
-                length = response.json()['length']
-                chain = response.json()['chain']
+                length = j.get('length')
+                chain = j.get('chain')
 
                 # Check if the length is longer and the chain is valid
-                if length > max_length and self.valid_chain(chain):
-                    max_length = length
-                    new_chain = chain
+                print('resolve checking chain')
+                if length > max_length:
+                    print('resolve found longer chain, validating...')
+                    if self.valid_chain(chain):
+                        print('resolve longer chain is valid!!!')
+                        max_length = length
+                        new_chain = chain
 
         # Replace our chain if we discovered a new, valid chain longer than ours
         if new_chain:
