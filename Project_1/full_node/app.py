@@ -3,7 +3,7 @@ import os
 p = os.getcwd()
 sys.path.insert(0, p)
 from blockchain.blockchain import Transaction, Blockchain ,MINING_SENDER, MINING_REWARD
-import requests
+
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
@@ -75,7 +75,7 @@ def full_chain():
 @app.route('/save', methods=['POST'])
 def save_blockchain():
     # Update
-    blockchain.resolve_conflicts()
+    blockchain.consensus()
     # Save
     try:
         pickle.dump(blockchain, open(BLOCKCHAIN_FILE_NAME, "wb"))
@@ -135,7 +135,7 @@ def register_nodes():
 
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
-    replaced = blockchain.resolve_conflicts()
+    replaced = blockchain.consensus()
 
     if replaced:
         response = {
@@ -175,6 +175,6 @@ if __name__ == '__main__':
         blockchain = Blockchain()
 
     # Resolving confilicts
-    blockchain.resolve_conflicts()
+    blockchain.consensus()
 
     app.run(host='127.0.0.1', port=port)

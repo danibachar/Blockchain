@@ -332,7 +332,7 @@ class Blockchain(Base):
 
         return True
 
-    def resolve_conflicts(self):
+    def consensus(self):
         """
         Resolve conflicts between blockchain's nodes
         by replacing our chain with the longest one in the network.
