@@ -41,7 +41,7 @@ def validate_transaction():
 
 	transaction = Transaction(**request.form)
 	response = {'is_valid': spv.validate_transaction(transaction)}
-
+	
 	return jsonify(response), 200
 
 @app.route('/generate/transaction', methods=['POST'])
@@ -60,6 +60,38 @@ def generate_transaction():
 
 	return jsonify(response), 200
 
+@app.route('/nodes/consensus', methods=['GET'])
+def consensus():
+    replaced = spv.consensus()
+
+    if replaced:
+        response = {
+            'message': 'Our chain was replaced',
+            'new_chain': spv.chain
+        }
+    else:
+        response = {
+            'message': 'Our chain is authoritative',
+            'chain': spv.chain
+        }
+    return jsonify(response), 200
+
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    values = request.form
+    nodes = values.get('nodes').replace(" ", "").split(',')
+
+    if nodes is None:
+        return "Error: Please supply a valid list of nodes", 400
+
+    for node in nodes:
+        spv.register_node(node)
+
+    response = {
+        'message': 'New nodes have been added',
+        'total_nodes': [node for node in spv.nodes],
+    }
+    return jsonify(response), 201
 
 if __name__ == '__main__':
     from argparse import ArgumentParser

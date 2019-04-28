@@ -50,6 +50,8 @@ def register_and_validate_nodes(nodes_porcesses, base_urls):
     for url in base_urls:
         urls_without_mine = list(filter(lambda u: url != u, base_urls))
         url = ''.join([url, endpoint])
+        if len(url) == 0:
+            continue
         print('register me - {}, nieghbours - {}'.format(url, urls_without_mine))
         try:
             registration_payload = ','.join(urls_without_mine)
@@ -118,9 +120,9 @@ nodes_porcesses = init_nodes(nodes_urls, client_urls)
 
 # Wiating for nodes and client to initielize
 print('Waiting for nodes to come up!')
-time.sleep(5)
+time.sleep(10)
 
-register_and_validate_nodes(nodes_porcesses, nodes_urls)
+register_and_validate_nodes(nodes_porcesses, nodes_urls+client_urls)
 
 open_gui = open_gui(curr_platform, nodes_urls, client_urls)
 

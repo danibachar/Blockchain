@@ -48,13 +48,15 @@ def balance(address):
     response = {'balance': balance}
     return jsonify(response), 200
 
-@app.route('/block/get/<tx_signature>', methods=['GET'])
-def get_block_header(tx_signature):
-    response = {}
-    
-    header = blockchain.get_block_header_by(tx_signature)
-    if header:
-        response['header'] = header
+@app.route('/headers/get/', methods=['GET'])
+def get_headers():
+    response = {
+        'header': []
+    }
+
+    headers = blockchain.get_headers()
+    if headers and len(headers) > 0:
+        response['header'] = headers
 
     return jsonify(response), 200
 
@@ -133,7 +135,7 @@ def register_nodes():
     return jsonify(response), 201
 
 
-@app.route('/nodes/resolve', methods=['GET'])
+@app.route('/nodes/consensus', methods=['GET'])
 def consensus():
     replaced = blockchain.consensus()
 

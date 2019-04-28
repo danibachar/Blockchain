@@ -120,6 +120,7 @@ class Base:
         """
         #Checking node_url has valid format
         parsed_url = urlparse(node_url)
+        print('registering - {}'.format(node_url))
         if parsed_url.netloc:
             self.nodes.add(parsed_url.netloc)
         elif parsed_url.path:
@@ -139,6 +140,9 @@ class Base:
     def create_block(self, nonce, previous_hash):
         pass
 
+    def create_block(self, nonce, previous_hash):
+        pass
+
 # SPV Wallet
 class BlockchainSPV(Base):
     def __init__(self):
@@ -147,35 +151,81 @@ class BlockchainSPV(Base):
     def create_block(self, nonce, previous_hash):
         pass
 
-    # Validating Using Headers only! - using signatures
+    # Validating Using Headers only!
     def validate_transaction(self, transaction):
-        is_valid = False
         # First check!
+        is_valid = False
         if not transaction.is_valid():
-            return  is_valid
-        signature = transaction.signature
-        header = self.get_block_header_for(signature)
-        if not header:
             return is_valid
+        headers = self.get_headers()
+        headers_count = len(headers)
+        print('headers count = {}'.format(headers_count))
+        if not headers or headers_count == 0:
+            return is_valid
+
+        for header in headers:
+            is_valid = is_valid or self.validate_header(header, transaction)
+        print('is valid? - {}'.format(is_valid))
+        return is_valid
+    def validate_header(self, block_header, transaction_to_validate):
         # Reconstracting the Merkle tree using leaves only
         mt = MerkleTools()
-        signatures = header.get(TRANSACTIONS_SIGNATURES)
+        signatures = block_header.get(TRANSACTIONS_SIGNATURES)
         mt.add_leaf(signatures, True)
         mt.make_tree()
+        print('is tree ready = {}'.format(mt.is_ready))
         # Merkle Proof!
+        signature = transaction_to_validate.signature
         index = signature.index(signature)
+        print('looking for index - {}'.format(index))
         # Using originale root! nad not new one which validate indeed!
-        is_valid = mt.validate_proof(mt.get_proof(index), mt.get_leaf(index), header.get(MERKLE_ROOT_KEY))
-        return is_valid
+        try:
+            proof = mt.get_proof(index)
+            leaf = mt.get_leaf(index)
+            root = block_header.get(MERKLE_ROOT_KEY)
+            is_valid = mt.validate_proof(proof, leaf, root)
+            return is_valid
+        except Exception as e:
+            print(e)
+            return False
 
-
-    def get_block_header_for(self, signature):
+    def get_headers(self):
         # For now asking full noode - todo change to hold it myself
-        res = requests.get('http://127.0.0.1:5000/block/get/' +signature)
-        print(res.json())
+        res = requests.get('http://127.0.0.1:5000/headers/get')
         return res.json().get(BLOCK_HEADER_KEY)
 
+    def consensus(self):
+        neighbours = self.nodes
+        new_chain = None
 
+        # We're only looking for chains longer than ours
+        max_length = len(self.chain)
+
+        # Grab and verify the chains from all the nodes in our network
+        for node in neighbours:
+            print('http://' + node + '/chain')
+            response = requests.get('http://' + node + '/chain')
+            j = response.json()
+            print('chain res = {}'.format(j))
+            if response.status_code == 200:
+                length = j.get('length')
+                chain = j.get('chain')
+
+                # Check if the length is longer and the chain is valid
+                print('resolve checking chain')
+                if length > max_length:
+                    print('resolve found longer chain, validating...')
+                    if self.valid_chain(chain):
+                        print('resolve longer chain is valid!!!')
+                        max_length = length
+                        new_chain = chain
+
+        # Replace our chain if we discovered a new, valid chain longer than ours
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
 # Full Node
 class Blockchain(Base):
 
@@ -235,11 +285,11 @@ class Blockchain(Base):
 
         return is_exist
 
+    def get_headers(self):
+        headers = list(map(lambda block: block.get(BLOCK_HEADER_KEY, {}), self.chain))
+        return headers
+
     def create_block(self, nonce, previous_hash):
-        """
-        Add a block of transactions to the blockchain
-        Each block Holds a MekrleTree
-        """
         oldest_pending_tx = self.pending_transactions[:4]
 
         # Merkle Tree of the blockchain
@@ -270,9 +320,6 @@ class Blockchain(Base):
         return block
 
     def proof_of_work(self):
-        """
-        Proof of work algorithm
-        """
         last_block = self.chain[-1]
         last_hash = self.hash(last_block)
 
@@ -284,9 +331,6 @@ class Blockchain(Base):
 
 
     def valid_proof(self, transactions, last_hash, nonce, difficulty=MINING_DIFFICULTY):
-        """
-        Check if a hash value satisfies the mining conditions. This function is used within the proof_of_work function.
-        """
         guess = (str(transactions)+str(last_hash)+str(nonce)).encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:difficulty] == '0'*difficulty
@@ -302,9 +346,6 @@ class Blockchain(Base):
         return balance
 
     def valid_chain(self, chain):
-        """
-        check if a bockchain is valid
-        """
         last_block = chain[0]
         current_index = 1
 
@@ -333,10 +374,6 @@ class Blockchain(Base):
         return True
 
     def consensus(self):
-        """
-        Resolve conflicts between blockchain's nodes
-        by replacing our chain with the longest one in the network.
-        """
         neighbours = self.nodes
         new_chain = None
 
