@@ -3,12 +3,12 @@ import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Route, Link, Switch } from 'react-router-dom';
 
-import ChartsView from './ChartsView';
+import VotersView from './components/VotersView';
 
 const App = () => (
 	<Router>
 		<Switch>
-			<Route exact path="/" component={ChartsView} />
+			<Route exact path="/" component={VotersView} />
 		</Switch>
 	</Router>
 );
