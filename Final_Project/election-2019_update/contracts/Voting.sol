@@ -11,17 +11,19 @@ contract Voting {
 	}
 
 	mapping(uint => Candidate) public candidates;
-
+	
 	uint public numberOfCandidates;
-	address public admin;
+	address public admin; 
 	uint public votingStartDate; // Voting start date
 	uint public votingEndDate; // Voting end date
 	uint public numberOfVoters;
+	uint public votingCoinTotalAmount = 626; //ERC20 total amount of coins
 
 	constructor () public {
 		admin = msg.sender;
 		votingStartDate = 0;
 		votingEndDate = 1;
+		voterBalance[msg.sender] = votingCoinTotalAmount;
 	}
 
 	modifier onlyAdmin { // Insure only admin can use a function
@@ -37,14 +39,10 @@ contract Voting {
     	_;
     }
 
-    function isAdmin () public returns (bool TF) {
-    	return (msg.sender == admin);
-    }
-
 	function addingCandidate (string memory _name, string memory _agenda) public onlyAdmin beforeVotingStarted { // Adding a new candidate to candidates mapping		
 		numberOfCandidates++;
 		candidates[numberOfCandidates] = Candidate(numberOfCandidates, _name, _agenda, 0);
-		emit candidateEvent(numberOfCandidates); // Event for adding a new candidate
+		emit candidateEvent(); // Event for adding a new candidate
 	}
 
 	function defineVotingDates (uint _startDate, uint _endDate) public onlyAdmin  { 
@@ -61,15 +59,14 @@ contract Voting {
 		require(_candidateId > 0 && _candidateId <= numberOfCandidates); // Insure that the candidate exites
 		candidates[_candidateId].counter ++; // Increase candidate counter by one
 		voters[msg.sender] == 2; // 2 represent voter voted in the past
-        emit votingEvent(_candidateId); // Event for a voter that voted
+        emit votingEvent(); // Event for a voter that voted
+        getPaidForVoting(msg.sender);
 	}
 
 	event votingEvent (
-		uint indexed _candidateId
 		);
 
 	event candidateEvent (
-		uint indexed _candidateId
 		);
 
 	function addVoter (address _voter) public onlyAdmin beforeVotingStarted {
@@ -81,12 +78,48 @@ contract Voting {
 	event addVoterEvent (
 		);
 
-	function voterStatus () public returns (uint status) {
+	function voterStatus () public view returns (uint status) {
 		return (voters[msg.sender]);
 	}
 
-	function endVoting () public returns (bool index) {
-		return (now > votingEndDate);
+	mapping(address => uint) public voterBalance; // mapping keys to token balances of a voter.
+
+	function balanceOf(address coinOwner) public view returns (uint) {
+		return voterBalance[coinOwner];
 	}
 
+	function getPaidForVoting(address receiver) private {
+		voterBalance[admin] = voterBalance[msg.sender] - votingCoinTotalAmount/numberOfVoters;
+		voterBalance[receiver] = votingCoinTotalAmount/numberOfVoters;
+		emit voterGotPaidForVoting();
+	}
+
+	event voterGotPaidForVoting (
+		);
+
 }
+
+
+
+
+
+/* 
+Tasks for Tom:
+
+2. ERC20
+3. Presention
+	3.1. add to the presention, after closing the smart contract with Daniel the following:
+		3.1.1. Structs
+		3.1.2. Mappings
+		3.1.3. Modifiers
+		3.1.4. Functions
+		3.1.5. State Variables
+		3.1.6. Events
+	3.2. Add Installation instructions - after we are done
+	3.3. Add demonstration video - after we are done
+	3.4. Add known bugs - after we are done
+4. bonos something nice
+5. read about how truffle works with respect to migrations
+6. aading a real voters book 
+7. check if you can use a real live photo insted of privte key
+*/
