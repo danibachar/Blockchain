@@ -1,9 +1,6 @@
 import React, { Component } from 'react';
 
-var DoughnutChart = require("react-chartjs").Doughnut;
-var PieChart = require("react-chartjs").Pie;
-var LineChart = require("react-chartjs").Line;
-var BarChart = require("react-chartjs").Bar;
+import { Bar } from 'react-chartjs-2';
 
 const ChartsView = ({ candidatesNames, candidatesVotesCount }) => {
 
@@ -11,15 +8,23 @@ const ChartsView = ({ candidatesNames, candidatesVotesCount }) => {
     labels: candidatesNames,
     datasets: [
       {
-        label: "My First dataset",
+        label: 'Vote Count',
         fillColor: "rgba(220,220,220,0.2)",
         strokeColor: "rgba(220,220,220,1)",
+        hoverBackgroundColor: 'rgba(255,99,132,0.4)',
+        hoverBorderColor: 'rgba(255,99,132,1)',
+        borderWidth: 1,
         data: candidatesVotesCount
       }
     ]
   };
+  const options = {
+        responsive: true,
+        scales: { yAxes: [{ ticks: { beginAtZero: true } }] },
+        legend: { position: 'top',},
+  }
 
-  return <BarChart data={chartData} /*width="600" height="250"*//>
+  return <Bar data={chartData} options={options} /*width={600} height={250}*//>
 }
 
 export default ChartsView

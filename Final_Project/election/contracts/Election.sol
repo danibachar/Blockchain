@@ -17,11 +17,13 @@ contract Election {
 	uint public votingStartDate; // Voting start date
 	uint public votingEndDate; // Voting end date
 	uint public numberOfVoters;
+	bool public isVotingDatesConfigured;
 
 	constructor () public {
 		admin = msg.sender;
 		votingStartDate = 0;
 		votingEndDate = 1;
+		isVotingDatesConfigured = false;
 	}
 
 	modifier onlyAdmin { // Insure only admin can use a function
@@ -29,16 +31,16 @@ contract Election {
         _;
     }
     modifier whileVoting { // Limits changes after voting started (such as adding a candidate or adding voters)
-    	require(now < votingEndDate && now >= votingStartDate, "Voting hasnot started yet.");
+    	require(now < votingEndDate && now >= votingStartDate, "Voting has not started yet.");
     	_;
     }
     modifier beforeVotingStarted {
-    	require( votingStartDate > now, "Voting has started, can bot add new candidates");
+    	require( votingStartDate > now, "Voting has already started, You cannot change the election DB.");
     	_;
     }
 
-    function isAdmin () public returns (bool TF) {
-    	return (msg.sender == admin);
+    function isAdmin (address _checkAdmin) public returns (bool TF) {
+    	return (_checkAdmin == admin);
     }
 
 	function addingCandidate (string memory _name, string memory _agenda) public onlyAdmin beforeVotingStarted { // Adding a new candidate to candidates mapping
@@ -52,6 +54,7 @@ contract Election {
 		require (votingStartDate == 0 && votingEndDate == 1, "Dates allready defined"); // Dates can be defined only once
 		votingStartDate = _startDate;
 		votingEndDate = _endDate;
+		isVotingDatesConfigured = true;
 	}
 
 	mapping(address => uint) public voters;
@@ -60,7 +63,7 @@ contract Election {
 		require(voters[msg.sender] == 1, "You can not vote, you voted in the past, or you do not have the right to vote"); // Insure that voter didn't vote and has the right
 		require(_candidateId > 0 && _candidateId <= numberOfCandidates); // Insure that the candidate exites
 		candidates[_candidateId].counter ++; // Increase candidate counter by one
-		voters[msg.sender] == 2; // 2 represent voter voted in the past
+		voters[msg.sender] = 2; // 2 represent voter voted in the past
     emit votingEvent(_candidateId); // Event for a voter that voted
 	}
 
@@ -72,14 +75,15 @@ contract Election {
 		uint indexed _candidateId
 		);
 
-	function addVoter (address _voter) public onlyAdmin beforeVotingStarted {
-		voters[_voter] = 1;
-		numberOfVoters++;
+	function addVoters(address[] memory _voters) public onlyAdmin beforeVotingStarted {
+		for (uint i = 0; i < _voters.length; i++) {
+			voters[_voters[i]] = 1;
+			numberOfVoters++;
+		}
 		emit addVoterEvent();
 	}
 
-	event addVoterEvent (
-		);
+	event addVoterEvent ();
 
 	function voterStatus () public returns (uint status) {
 		return (voters[msg.sender]);
@@ -90,4 +94,14 @@ contract Election {
 	}
 
 	// QA Functions
+
+	// This function is just a QA function to test functionality.
+	// It should not appear on a real contract - we need to understand how to set it appropriatly
+	// We are aware of the security problem, but because this is just for showing functionality
+	event adminSwitchEvent ();
+
+	function setAdmin(address _admin) public {
+		admin = _admin;
+		emit adminSwitchEvent();
+	}
 }

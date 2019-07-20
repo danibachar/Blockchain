@@ -6,13 +6,10 @@ import ChartsView from './ChartsView'
 import ChooseCandidateAndVoteView from './ChooseCandidateAndVoteView'
 import AccountsSelectionView from './AccountsSelectionView'
 
-import Calendar from 'react-calendar';
-import TimePicker from 'react-time-picker';
-
-import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button';
+import Spinner from 'react-bootstrap/Spinner';
 
-var TimeFormat = require('hh-mm-ss')
+
 
 var el = new ElectionWeb3()
 
@@ -27,66 +24,56 @@ export default class VotersView extends Component {
       selectedCandidates: {},
       candidatesSelectionOptions: [],
       //UI
-      voterStatus: 0,
-      isLoading: false,
-      canVote: false,
+      myVoterStatus: 0,
+      isLoading: true,
       myAccount: "",
-      //Dates
-      dateRange: [null, null],
-      endHour: "23:22",
-      startHour: null,
-      //Candidate registration
-      registerCandidate: {fullName: "", address: "", agenda: ""}
+      isVotingDatesConfigured: false,
      };
+
 
      //Events
      this.contractEvents = this.contractEvents.bind(this);
      //Actions
      this.vote = this.vote.bind(this);
      this.registerAsVoter = this.registerAsVoter.bind(this);
-     this.setElectionDates = this.setElectionDates.bind(this);
-     this.registerCandidate = this.registerCandidate.bind(this);
-     this.addVoter = this.addVoter.bind(this);
-
+     this.becomeAdmin = this.becomeAdmin.bind(this);
      this.updateState = this.updateState.bind(this);
   }
 
 	async componentWillMount() {
+    this.setState({ isLoading: true });
+    await el.initWeb3();
+    el.setEventListener({ eventsCallBack: this.contractEvents })
     await this.updateState()
+    this.setState({ isLoading: false });
   }
 
   async updateState() {
     this.setState({ isLoading: true });
-    const candidates = await el.initWeb3({ eventsCallBack: this.contractEvents });
-    const candidatesNames = candidates.map(x => x.name);
-    const candidatesVotesCount = candidates.map(x => x.voteCount);
+    const candidates = await el.getCandidates()
     const candidatesIds = candidates.map(x => x.id);
-    const candidatesSelectionOptions = candidates.map((x)=>{return {value: x.id, label: x.name}});
+    const candidatesSelectionOptions = candidates.map((x)=>{return {value: x.id, label: `${x.name}, agenda: ${x.agenda}`}});
 
     const voterStatus = await el.voterStatus();
+    const isVotingDatesConfigured = await el.isVotingDatesConfigured();
     const account = el.getAccount();
     const startDate = await el.startDate();
     const endDate = await el.endDate();
-    console.log(startDate)
-    console.log(endDate)
 
     this.setState({
-      candidatesNames: candidatesNames,
-      candidatesVotesCount: candidatesVotesCount,
       candidatesIds: candidatesIds,
       candidatesSelectionOptions: candidatesSelectionOptions,
       isLoading: false,
-      voterStatus: voterStatus,
+      myVoterStatus: voterStatus,
       myAccount: account,
-      dateRange: [startDate, endDate],
-      startHour: TimeFormat.fromS(startDate.getHours()*60 + startDate.getMinutes()),
-      endHour: TimeFormat.fromS(endDate.getHours()*60 + endDate.getMinutes()),
+      isVotingDatesConfigured: isVotingDatesConfigured,
+      startDate: startDate,
+      endDate: endDate,
     });
   }
 
-  contractEvents = () => {
-    this.render();
-    console.log("event")
+  async contractEvents() {
+    await this.updateState();
   };
 
   //MARK: - Votes
@@ -97,212 +84,89 @@ export default class VotersView extends Component {
   async registerAsVoter() {
     this.setState({ isLoading: true });
     const res = await el.registerAsVoter();
-    console.log(res);
-    this.setState({ canVote: true, isLoading: false });
+    this.setState({ isLoading: false });
   };
 
   async vote()  {
     this.setState({ isLoading: true });
     const candidateId = this.state.selectedCandidates.value
     const res = await el.castVote({candidateId});
-    console.log(res);
-    this.setState({ voterStatus: 2, isLoading: false });
+    this.setState({ isLoading: false });
   };
 
-  //MARK: - Candidates
-  setRegisterCandidateFullName = event => {
-    this.setState({
-        registerCandidate: {
-          fullName: event.target.value,
-          agenda: this.state.registerCandidate.agenda,
-        }
-      })
-  }
-
-  setRegisterCandidateAgenda = event => {
-    this.setState({
-        registerCandidate: {
-          fullName: this.state.registerCandidate.fullName,
-           agenda: event.target.value
-         }
-      })
-  }
-
-  async registerCandidate() {
+  async becomeAdmin()  {
     this.setState({ isLoading: true });
-    const res = await el.addCandidate({candidate: this.state.registerCandidate})
-    console.log(res);
+    const res = await el.becomeAdmin();
     this.setState({ isLoading: false });
-  }
-  //Voters
-  async addVoter(event) {
-    this.setState({ isLoading: true });
-    const res = await el.addVoter({address: this.state.registerCandidate})
-    console.log(event.target.value);
-    this.setState({ isLoading: false });
-  }
-
-  //MARK: Dates
-  setElectionDate = dateRange => { this.setState({ dateRange: dateRange }) }
-  setStartHour = startHour => { this.setState({ startHour: startHour }) }
-  setEndHour = endHour => { this.setState({ endHour: endHour }) }
-
-  async setElectionDates() {
-    this.setState({ isLoading: true });
-    var startDate = this.state.dateRange[0];
-    var endDate = this.state.dateRange[1];
-
-    const startHour = this.state.startHour.split(":");
-
-    let hoursToAdd = parseInt(startHour[0])*60*60*1000
-    let minutesToAdd = parseInt(startHour[1])*60*1000
-    console.log(startDate)
-    startDate = new Date(startDate.getTime() + hoursToAdd + minutesToAdd);
-    console.log(startDate)
-
-    console.log(startDate)
-    const endHour = this.state.endHour;
-
-    hoursToAdd = parseInt(endHour[0])*60*60*1000
-    minutesToAdd = parseInt(endHour[1])*60*1000
-    console.log(endDate)
-    endDate = new Date(endDate.getTime() + hoursToAdd + minutesToAdd);
-    console.log(endDate)
-
-    const res = await el.setElectionDates({ startDate, endDate });
-    console.log(res);
-    this.setState({ isLoading: false });
-  }
+  };
 
   render() {
+
+    if (this.state.isLoading) {
+      return <div ref="container">
+      {
+        <Spinner animation="border" role="status">
+          <span className="sr-only">Loading...</span>
+        </Spinner>
+      }
+        </div>
+    }
+    let votingButtonTitle = "Vote"
+    if (this.state.myVoterStatus == 0) {
+      votingButtonTitle = "You are not listed as a voter"
+    }
+    if (this.state.myVoterStatus == 2) {
+      votingButtonTitle = "You already voted - you can vote only once"
+    }
+    const now = new Date()
+    const whileVoting = (this.state.startDate < now) && (this.state.endDate > now);
+    const status = parseInt(this.state.myVoterStatus);
+    const canVote = (status == 1 && whileVoting);
+    const isRegisterAsVoterAlreay = (0 < status);
+    const startDate = this.state.startDate.toString();
+    const endDate = this.state.endDate.toString();
+    let electionDateTitle = "Election will run between the dates: \n" + startDate + "\n until \n" + endDate;
+    if (!this.state.isVotingDatesConfigured) {
+      electionDateTitle = "Voting Dates Not set yet"
+    }
+
     return <div ref="container">
+    { <h2>Hello, {this.state.myAccount}!</h2> }
+    { <h4> {electionDateTitle} </h4> }
+    {<h4>Select Candidate:</h4> }
     {
-      <h3>Hello, {this.state.myAccount}!</h3>
-    }
-    {
-      <
-      ChartsView
-      candidatesNames={this.state.candidatesNames}
-      candidatesVotesCount={this.state.candidatesVotesCount}
-      />
-    }
-    {
-      <
-      ChooseCandidateAndVoteView
+      <ChooseCandidateAndVoteView
       options={this.state.candidatesSelectionOptions}
       selectedOption={this.state.selectedCandidates}
       handleChange={this.handleCandidateSelectionChange}
       />
     }
     {
-      <
-      Button
-      variant="primary"
-      disabled={this.state.isLoading}
-      onClick={(!this.state.isLoading || this.voterStatus != 0) ? this.vote : null}
-      >
-      {this.state.isLoading ? 'Loading…' : 'Vote'}
-      </Button>
-    }
-    {
-      <
-      Button
-      variant="primary"
-      disabled={this.state.isLoading}
-      onClick={(!this.state.isLoading) ? this.registerAsVoter : null}
-      >
-      {this.state.isLoading ? 'Loading…' : 'Register As Voter'}
-      </Button>
-    }
-    {
-      <
-      Calendar
-      onChange={this.setElectionDate}
-      value={this.state.dateRange}
-      selectRange={true}
-      minDate={(new Date())}
-      />
-    }
-    {
-      <TimePicker
-          onChange={this.setStartHour}
-          value={this.state.startHour}
-          disableClock={false}
-        />
-    }
-    {
-      <TimePicker
-          onChange={this.setEndHour}
-          value={this.state.endHour}
-          disableClock={false}
-        />
-    }
-    {
-      <
-      Button
-      variant="primary"
-      disabled={this.state.isLoading && this.state.dateRange.length < 2 && this.state.dateRange[0] == this.state.dateRange[1]}
-      onClick={(!this.state.isLoading && this.state.dateRange.length == 2 && this.state.dateRange[0] != this.state.dateRange[1]) ? this.setElectionDates : null}
-      >
-      {this.state.isLoading ? 'Loading…' : 'Set Election Dates'}
-      </Button>
-    }
-    {
-    <Form>
-      <Form.Group controlId="formFullName">
-        <Form.Label>Candidate Full Name: </Form.Label>
-        <
-        Form.Control
-          as="input"
-          type="text"
-          placeholder="Enter Full Name"
-          value={this.state.registerCandidate.fullName}
-          onChange={this.setRegisterCandidateFullName}
-         />
-      </Form.Group>
-
-      <Form.Group controlId="formAgenda">
-        <Form.Label>Candidate Agend: </Form.Label>
-        <
-        Form.Control
-          as="input"
-          type="text"
-          placeholder="Enter Agenda"
-          value={this.state.registerCandidate.agenda}
-          onChange={this.setRegisterCandidateAgenda}
-        />
-      </Form.Group>
       <Button
-        variant="primary"
-        type="submit"
-        disabled={this.state.isLoading}
-        onClick={(!this.state.isLoading) ? this.registerCandidate : null}
+      variant="primary"
+      disabled={!canVote}
+      onClick={this.vote}
       >
-        {this.state.isLoading ? 'Loading…' : 'Register Candidate'}
+      {votingButtonTitle}
       </Button>
-    </Form>
     }
     {
-    <Form>
-      <Form.Group controlId="formFullName">
-        <Form.Label>Voter Address: </Form.Label>
-        <
-        Form.Control
-          as="input"
-          type="text"
-          placeholder="Enter Address"
-          onChange={this.addVoter}
-         />
-      </Form.Group>
       <Button
-        variant="primary"
-        type="submit"
-        disabled={this.state.isLoading}
-        onClick={(!this.state.isLoading) ? this.registerCandidate : null}
+      variant="primary"
+      disabled={isRegisterAsVoterAlreay}
+      onClick={this.registerAsVoter}
       >
-        {this.state.isLoading ? 'Loading…' : 'Register Candidate'}
+      {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
       </Button>
-    </Form>
+    }
+    {
+      <Button
+      variant="primary"
+      disabled={false}
+      onClick={this.becomeAdmin}
+      >
+      {'Become admin and switch to admin console'}
+      </Button>
     }
     </div>
   }

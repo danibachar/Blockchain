@@ -10,29 +10,36 @@ class ElectionWeb3 {
     this.web3 = null;
     this.contracts = { Election: null };
     this.account = '0x0'
+    this.isInit = false
+    this.isListening = false
   }
 
-  async initWeb3({ eventsCallBack }) {
+  async initWeb3() {
+    if (this.isInit) {
+      console.log("ElectionWeb3 is already init")
+      return;
+    };
+    this.isInit = true;
 
-    // if (window.ethereum) {
-    //   this.web3Provider = window.ethereum;
-    //   try {
-    //     // Request account access
-    //     await window.ethereum.enable();
-    //   } catch (error) {
-    //     // User denied account access...
-    //     console.error("User denied account access")
-    //   }
-    // }
-    // // Legacy dapp browsers...
-    // else if (window.web3) {
-    //   this.web3Provider = window.web3.currentProvider;
-    // }
-    // // If no injected web3 instance is detected, fall back to Ganache
-    // else {
-    //   this.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
-    // }
-    this.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
+    if (window.ethereum) {
+      this.web3Provider = window.ethereum;
+      try {
+        // Request account access
+        await window.ethereum.enable();
+      } catch (error) {
+        // User denied account access...
+        console.error("User denied account access")
+      }
+    }
+    // Legacy dapp browsers...
+    else if (window.web3) {
+      this.web3Provider = window.web3.currentProvider;
+    }
+    // If no injected web3 instance is detected, fall back to Ganache
+    else {
+      this.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
+    }
+    // this.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
     this.web3 = new Web3(this.web3Provider);
 
     // Contract
@@ -45,42 +52,45 @@ class ElectionWeb3 {
     this.account = account;
 
     // Instance init
-    const instance = await election.deployed();
-    this.electionInstance = instance;
-
-    // Register Events
-    instance.votingEvent({
-        fromBlock: 0,
-        toBlock: 'latest'
-    },eventsCallBack)
-
-    instance.candidateEvent({
-        fromBlock: 0,
-        toBlock: 'latest'
-    },eventsCallBack)
-
-    instance.addVoterEvent({
-        fromBlock: 0,
-        toBlock: 'latest'
-    },eventsCallBack)
-    // Candidates Count
-    const count =  await instance.numberOfCandidates();
-
-    var candidates = []
-
-    for (var i = 1; i <= count; i++) {
-      const candidate = await instance.candidates(i);
-      candidates.push({
-        id: candidate[0],
-        name: candidate[1],
-        voteCount: candidate[2]
-      })
+    try {
+      this.electionInstance = await election.deployed();;
+    } catch (error) {
+      console.log(error);
+      alert("Please set account in Metamask")
     }
 
-    return candidates;
 
   }
+
   //MARK: - Setters
+  setEventListener({ eventsCallBack }) {
+    if (this.isListening) {
+      console.log("ElectionWeb3 is already listen")
+      return;
+    };
+    if (!this.electionInstance) {
+      console.log("Contract not deployed");
+      return;
+    }
+    this.isListening = true;
+    // Register Events
+    this.electionInstance.adminSwitchEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.votingEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.candidateEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.addVoterEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+  }
+
+  async becomeAdmin() {
+    try {
+      const res = await this.electionInstance.setAdmin(this.account, {from: this.account });
+      return res;
+    } catch (error) {
+      console.log(error);
+      alert(error.reason)
+      return null;
+    }
+  }
+
   async castVote({ candidateId }) {
     try {
       var accounts = this.web3.eth.accounts;
@@ -89,20 +99,22 @@ class ElectionWeb3 {
       return res;
     } catch (error) {
       console.log(error);
+      alert(error.reason)
       return null;
     }
   }
 
   async registerAsVoter() {
-    return await this.addVoter({address: this.account});
+    return await this.addVoters({addresses: [this.account]});
   }
 
-  async addVoter({ address }) {
+  async addVoters({ addresses }) {
     try {
-      const res = await this.electionInstance.addVoter(address, {from: this.account });
+      const res = await this.electionInstance.addVoters(addresses, {from: this.account });
       return res;
     } catch (error){
       console.log(error);
+      alert(error.reason)
       return null;
     }
 
@@ -116,6 +128,7 @@ class ElectionWeb3 {
       return res;
     } catch (error){
       console.log(error)
+      alert(error.reason)
       return null;
     }
 
@@ -127,23 +140,87 @@ class ElectionWeb3 {
       return res;
     } catch (error){
       console.log(error)
+      alert(error)
       return null;
     }
 
   }
 
   //MARK: Getters
+  async votingCoinBalance() {
+    try {
+      const balance = await this.electionInstance.balance(this.account )
+      return balance;
+    } catch (error) {
+      console.log(error);
+      alert(error)
+      return 0;
+    }
+  }
+
+  async isAdmin() {
+    try {
+      const adminAccout = await this.electionInstance.admin()
+      const isAdmin =  (adminAccout.toUpperCase() == this.account.toUpperCase());
+      return isAdmin;
+    } catch (error) {
+      console.log(error);
+      alert(error)
+      return false;
+    }
+
+  }
+  async getCandidates() {
+    try {
+      // Candidates Count
+      const count =  await this.electionInstance.numberOfCandidates();
+
+      var candidates = []
+
+      for (var i = 1; i <= count; i++) {
+        const candidate = await this.electionInstance.candidates(i);
+        candidates.push({
+          id: candidate[0],
+          name: candidate[1],
+          agenda: candidate[2],
+          voteCount: candidate[3]
+        })
+      }
+
+      candidates.sort((c1, c2) => parseInt(c1.voteCount) - parseInt(c2.voteCount));
+      return candidates;
+    } catch (error) {
+        console.log(error)
+        alert(error)
+        return [];
+      }
+
+  }
   getAccount() {
     return this.account;
   }
 
   async voterStatus() {
     try {
-      const res = await this.electionInstance.voterStatus({from: this.account });
+      // const res = await this.electionInstance.voterStatus({from: this.account });
+      const res = await this.electionInstance.voters(this.account);
       return res;
     } catch (error){
       console.log(error)
+      alert(error)
       return 0;
+    }
+
+  }
+
+  async isVotingDatesConfigured() {
+    try {
+      const res = await this.electionInstance.isVotingDatesConfigured();
+      return res;
+    } catch (error){
+      console.log(error)
+      alert(error)
+      return false;
     }
 
   }
@@ -162,6 +239,7 @@ class ElectionWeb3 {
       return this.formatDate(res);
     } catch (error){
       console.log(error)
+      alert(error)
       return null;
     }
   }
@@ -172,6 +250,7 @@ class ElectionWeb3 {
       return this.formatDate(res);
     } catch (error){
       console.log(error)
+      alert(error)
       return null;
     }
   }
