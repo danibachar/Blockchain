@@ -53,10 +53,10 @@ contract Election {
 		modifier whileVoting { require(now < votingEndDate && now >= votingStartDate, "Voting has started.");_; }
 
 	// The modifier (beforeVotingStarted) insure that now is prior to voting start date
-	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has started, can bot add new candidates");_; }
+	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has noNOTt started yet .");_; }
 
 	//MARK: - Getters
-  function isAdmin (address _checkAdmin) public returns (bool TF) {
+  function isAdmin (address _checkAdmin) public view returns (bool TF) {
     	return (_checkAdmin == admin);
   }
 
@@ -65,7 +65,7 @@ contract Election {
 		return (voters[msg.sender]);
 	}
 
-	function endVoting () public returns (bool index) {
+	function endVoting () public view returns (bool index) {
 		return (now > votingEndDate);
 	}
 
@@ -81,7 +81,9 @@ contract Election {
 	candidate should take place only before voting starts */
 	function addingCandidate (string memory _name, string memory _agenda, string memory _picture, address _address) public onlyAdmin beforeVotingStarted { // Adding a new candidate to candidates mapping
 		numberOfCandidates++;
-		candidates[numberOfCandidates] = Candidate(numberOfCandidates, _name, _agenda, 0, _picture, _address);
+		candidates[numberOfCandidates] = Candidate(
+			numberOfCandidates, _name, _agenda, 0, _picture, _address
+		);
 		emit CandidatesAdded(numberOfCandidates);
 	}
 
@@ -107,16 +109,18 @@ contract Election {
     getPaid(msg.sender); // after coin is good
 	}
 
-	/* The function (addVoters) is limited for admin use only (with the help of th onlyAdmin modifier)
-		and can be used only before voting starts (with the help of th beforeVotingStarted modifier), that is, adding a new
+	/* The function (addVoters) is limited for admin use only (with the help of the onlyAdmin modifier)
+		and can be used only before voting starts (with the help of the beforeVotingStarted modifier), that is, adding a new
 		voter should take place only before voting starts */
 	function addVoters (address[] memory _voters) public onlyAdmin beforeVotingStarted {
-		for (uint i = numberOfVoters; i < numberOfVoters+_voters.length; i++) {
-			voters[_voters[i]] = 1;
-			registeredVoters[i] = _voters[i];
-			numberOfVoters++;
+		for (uint i = 0; i < _voters.length; i++) {
+			if (voters[_voters[i]] != 1) {
+				voters[_voters[i]] = 1;
+				numberOfVoters++;
+				registeredVoters[numberOfVoters] = _voters[i];
+			}
 		}
-		emit VotersAdded(_voters);
+		emit VotersAdded();
 	}
 
 	//MARK: - Private
@@ -132,7 +136,7 @@ contract Election {
 	event VoterGotPaidForVoting (address indexed receiver);
 	event VotingTookPlace (uint indexed candidateId);
 	event CandidatesAdded (uint indexed candidateId);
-	event VotersAdded (address[] indexed voters);
+	event VotersAdded ();
 
 
 	//----------------------------------------------------------------------------------------------------------------------------//

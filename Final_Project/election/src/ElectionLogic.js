@@ -140,7 +140,13 @@ class ElectionWeb3 {
   async addCandidate({ candidate }) {
     try {
 
-      const res = await this.electionInstance.addingCandidate(candidate.fullName, candidate.agenda, {from: this.account });
+      const res = await this.electionInstance.addingCandidate(
+        candidate.fullName,
+        candidate.agenda,
+        candidate.image,
+        candidate.address, 
+        {from: this.account }
+      );
       return res;
     } catch (error){
       console.log(error)

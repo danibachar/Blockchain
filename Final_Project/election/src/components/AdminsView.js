@@ -39,7 +39,7 @@ export default class AdminsView extends Component {
       startHour: null,
       isVotingDatesConfigured: false,
       //Candidate registration
-      registerCandidate: {fullName: "", address: "", agenda: ""},
+      registerCandidate: {fullName: "", address: "", agenda: "", image: ""},
       //Voter
       votersToAdd: { addresses: [] },
       registeredVoters:[],
@@ -101,6 +101,8 @@ export default class AdminsView extends Component {
         registerCandidate: {
           fullName: event.target.value,
           agenda: this.state.registerCandidate.agenda,
+          image: this.state.registerCandidate.image,
+          address: this.state.registerCandidate.address,
         }
       })
   }
@@ -108,8 +110,32 @@ export default class AdminsView extends Component {
   setRegisterCandidateAgenda = event => {
     this.setState({
         registerCandidate: {
+          agenda: event.target.value,
           fullName: this.state.registerCandidate.fullName,
-           agenda: event.target.value
+          image: this.state.registerCandidate.image,
+          address: this.state.registerCandidate.address,
+         }
+      })
+  }
+
+  setRegisterCandidateImage = event => {
+    this.setState({
+        registerCandidate: {
+          image: event.target.value,
+          fullName: this.state.registerCandidate.fullName,
+          agenda: this.state.registerCandidate.agenda,
+          address: this.state.registerCandidate.address,
+         }
+      })
+  }
+
+  setRegisterCandidateAddress = event => {
+    this.setState({
+        registerCandidate: {
+          address: event.target.value,
+          fullName: this.state.registerCandidate.fullName,
+          agenda: this.state.registerCandidate.agenda,
+          image: this.state.registerCandidate.image,
          }
       })
   }
@@ -117,7 +143,7 @@ export default class AdminsView extends Component {
   async registerCandidate() {
     this.setState({ isLoading: true });
     const res = await el.addCandidate({candidate: this.state.registerCandidate})
-    this.setState({ isLoading: false, registerCandidate:'' });
+    this.setState({ isLoading: false, registerCandidate: {fullName: "", address: "", agenda: "", image: ""} });
   }
 
   //MARK: - Voters
@@ -243,15 +269,34 @@ export default class AdminsView extends Component {
             onChange={this.setRegisterCandidateFullName}
            />
         </Form.Group>
-
         <Form.Group controlId="formAgenda">
-          <Form.Label>Candidate Agend: </Form.Label>
+          <Form.Label>Candidate Agenda: </Form.Label>
           <Form.Control
             as="input"
             type="text"
             placeholder="Enter Agenda"
             value={this.state.registerCandidate.agenda}
             onChange={this.setRegisterCandidateAgenda}
+          />
+        </Form.Group>
+        <Form.Group controlId="formAgenda">
+          <Form.Label>Candidate image url: </Form.Label>
+          <Form.Control
+            as="input"
+            type="text"
+            placeholder="Enter url"
+            value={this.state.registerCandidate.image}
+            onChange={this.setRegisterCandidateImage}
+          />
+        </Form.Group>
+        <Form.Group controlId="formImageUrl">
+          <Form.Label>Candidate public address: </Form.Label>
+          <Form.Control
+            as="input"
+            type="text"
+            placeholder="Enter address"
+            value={this.state.registerCandidate.address}
+            onChange={this.setRegisterCandidateAddress}
           />
         </Form.Group>
         <Button
@@ -281,7 +326,7 @@ export default class AdminsView extends Component {
           variant="primary"
           type="submit"
           disabled={false}
-          onClick={this.addVoter}
+          onClick={this.addVoters}
         >
           {'Register Voter'}
         </Button>

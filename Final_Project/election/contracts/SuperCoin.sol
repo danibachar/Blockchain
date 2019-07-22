@@ -54,7 +54,7 @@ contract SuperCoin {
   }
 
   /*
-  The function (transferFrom) allows the a user to transfer the allowed coins by the _allocator (if allowed) and to
+  The function (transferFrom) allows a user to transfer the allowed coins by the _allocator (if allowed) and to
   transfer it to any other account.
   */
   function transferFrom (address _allocator, uint _amount, address _receiver) public returns (bool success) {
