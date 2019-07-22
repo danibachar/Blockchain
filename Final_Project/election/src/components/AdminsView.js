@@ -11,7 +11,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Spinner from 'react-bootstrap/Spinner';
-import { TableHeaderColumn ,BootstrapTable } from 'react-bootstrap-table-next';
+import BootstrapTable from 'react-bootstrap-table-next';
 
 
 var TimeFormat = require('hh-mm-ss')
@@ -305,15 +305,9 @@ export default class AdminsView extends Component {
         />
       }
       { <h4>Registered Voters:</h4> }
+      {
+        <BootstrapTable keyField='id' data={ registeredVoters } columns={ [{dataField:'id', text: 'ID'},{dataField: 'address', text: 'Register Voters' }] } />
+      }
     </div>
   }
 }
-
-
-// {
-  // <BootstrapTable keyField='id' data={ registeredVoters } columns={ [{dataField:'id', text: 'ID',dataField: 'addrss', text: 'Register Voters' }] } />
-//   <BootstrapTable data={ registeredVoters } >
-//     <TableHeaderColumn dataField='id' isKey={ true }>ID</TableHeaderColumn>
-//     <TableHeaderColumn dataField='address'>Register Voters</TableHeaderColumn>
-//   </BootstrapTable>
-// }
