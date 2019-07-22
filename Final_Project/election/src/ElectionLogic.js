@@ -78,6 +78,8 @@ class ElectionWeb3 {
     this.electionInstance.votingEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
     this.electionInstance.candidateEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
     this.electionInstance.addVoterEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.gotPaid({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+
   }
 
   async becomeAdmin() {
@@ -136,6 +138,7 @@ class ElectionWeb3 {
 
   async addCandidate({ candidate }) {
     try {
+
       const res = await this.electionInstance.addingCandidate(candidate.fullName, candidate.agenda, {from: this.account });
       return res;
     } catch (error){
@@ -147,10 +150,27 @@ class ElectionWeb3 {
   }
 
   //MARK: Getters
+  async registeredVoters() {
+    try {
+      var voters = []
+      const count =  await this.electionInstance.numberOfVoters()
+
+      for (var i = 1; i <= count; i++) {
+        const voter = await this.electionInstance.registeredVoters(i);
+        voters.push(voter)
+      }
+      return voters;
+    } catch (error) {
+      console.log(error);
+      // alert(error)
+      return [];
+    }
+  }
+
   async votingCoinBalance() {
     try {
-      const balance = await this.electionInstance.balance(this.account )
-      return balance;
+      const balance = await this.electionInstance.balanceOf(this.account)
+      return parseInt(balance);
     } catch (error) {
       console.log(error);
       alert(error)
@@ -187,7 +207,13 @@ class ElectionWeb3 {
         })
       }
 
-      candidates.sort((c1, c2) => parseInt(c1.voteCount) - parseInt(c2.voteCount));
+      candidates.sort(function(c1 ,c2) {
+        const v1 = parseInt(c1.voteCount)
+        const v2 = parseInt(c2.voteCount)
+        const res = v1 - v2;
+        console.log(res)
+        return res
+      });
       return candidates;
     } catch (error) {
         console.log(error)

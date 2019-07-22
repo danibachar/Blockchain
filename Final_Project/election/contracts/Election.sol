@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+import './BibiCoin.sol';
 
 contract Election {
 
@@ -12,24 +13,34 @@ contract Election {
 
 	mapping(uint => Candidate) public candidates;
 
+	mapping(address => uint) public voters;
+	mapping(uint => address) public registeredVoters;
+
+
 	uint public numberOfCandidates;
 	address public admin;
 	uint public votingStartDate; // Voting start date
 	uint public votingEndDate; // Voting end date
 	uint public numberOfVoters;
 	bool public isVotingDatesConfigured;
+	BibiCoin private coin;
 
 	constructor () public {
 		admin = msg.sender;
 		votingStartDate = 0;
 		votingEndDate = 1;
 		isVotingDatesConfigured = false;
+		registeredVoters[0] = msg.sender;
+		numberOfVoters = 1;
+		voters[msg.sender] = 1;
+		coin = new BibiCoin(admin, 6262019);
 	}
 
 	modifier onlyAdmin { // Insure only admin can use a function
         require( msg.sender == admin, "Only Admin can call this function.");
         _;
-    }
+  }
+
     modifier whileVoting { // Limits changes after voting started (such as adding a candidate or adding voters)
     	require(now < votingEndDate && now >= votingStartDate, "Voting has not started yet.");
     	_;
@@ -38,7 +49,7 @@ contract Election {
     	require( votingStartDate > now, "Voting has already started, You cannot change the election DB.");
     	_;
     }
-
+		//Getters:
     function isAdmin (address _checkAdmin) public returns (bool TF) {
     	return (_checkAdmin == admin);
     }
@@ -57,14 +68,14 @@ contract Election {
 		isVotingDatesConfigured = true;
 	}
 
-	mapping(address => uint) public voters;
-
 	function vote (uint _candidateId) public whileVoting {
 		require(voters[msg.sender] == 1, "You can not vote, you voted in the past, or you do not have the right to vote"); // Insure that voter didn't vote and has the right
 		require(_candidateId > 0 && _candidateId <= numberOfCandidates); // Insure that the candidate exites
 		candidates[_candidateId].counter ++; // Increase candidate counter by one
 		voters[msg.sender] = 2; // 2 represent voter voted in the past
-    emit votingEvent(_candidateId); // Event for a voter that voted
+		voters[msg.sender] == 2; // 2 represent voter voted in the past
+				emit votingEvent(_candidateId); // Event for a voter that voted
+				getPaidForVoting(msg.sender);
 	}
 
 	event votingEvent (
@@ -76,8 +87,10 @@ contract Election {
 		);
 
 	function addVoters(address[] memory _voters) public onlyAdmin beforeVotingStarted {
-		for (uint i = 0; i < _voters.length; i++) {
+
+		for (uint i = numberOfVoters; i < numberOfVoters+_voters.length; i++) {
 			voters[_voters[i]] = 1;
+		 	registeredVoters[i] = _voters[i];
 			numberOfVoters++;
 		}
 		emit addVoterEvent();
@@ -92,6 +105,18 @@ contract Election {
 	function endVoting () public returns (bool index) {
 		return (now > votingEndDate);
 	}
+
+	function balanceOf(address coinOwner) public view returns (uint) {
+		return coin.balanceOf(coinOwner);
+	}
+
+	function getPaidForVoting(address receiver) private {
+		uint votingCoinTotalAmount = coin.totalSupply();
+		coin.transfer(receiver, votingCoinTotalAmount/numberOfVoters);
+		emit gotPaid();
+	}
+
+	event gotPaid();
 
 	// QA Functions
 

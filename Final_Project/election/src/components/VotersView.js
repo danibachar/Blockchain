@@ -55,6 +55,7 @@ export default class VotersView extends Component {
     const candidatesSelectionOptions = candidates.map((x)=>{return {value: x.id, label: `${x.name}, agenda: ${x.agenda}`}});
 
     const voterStatus = await el.voterStatus();
+    const votingCoinBalance = await el.votingCoinBalance();
     const isVotingDatesConfigured = await el.isVotingDatesConfigured();
     const account = el.getAccount();
     const startDate = await el.startDate();
@@ -67,6 +68,7 @@ export default class VotersView extends Component {
       myVoterStatus: voterStatus,
       myAccount: account,
       isVotingDatesConfigured: isVotingDatesConfigured,
+      votingCoinBalance: votingCoinBalance,
       startDate: startDate,
       endDate: endDate,
     });
@@ -123,16 +125,18 @@ export default class VotersView extends Component {
     const status = parseInt(this.state.myVoterStatus);
     const canVote = (status == 1 && whileVoting);
     const isRegisterAsVoterAlreay = (0 < status);
-    const startDate = this.state.startDate.toString();
-    const endDate = this.state.endDate.toString();
-    let electionDateTitle = "Election will run between the dates: \n" + startDate + "\n until \n" + endDate;
-    if (!this.state.isVotingDatesConfigured) {
-      electionDateTitle = "Voting Dates Not set yet"
+
+    let electionDateTitle = "Voting Dates Not set yet"
+    if (this.state.isVotingDatesConfigured) {
+      const startDate = this.state.startDate.toString();
+      const endDate = this.state.endDate.toString();
+      electionDateTitle = "Election will run between the dates: \n" + startDate + "\n until \n" + endDate;
     }
 
     return <div ref="container">
     { <h2>Hello, {this.state.myAccount}!</h2> }
     { <h4> {electionDateTitle} </h4> }
+    { <h4>Wallet Balance: {this.state.votingCoinBalance}</h4> }
     {<h4>Select Candidate:</h4> }
     {
       <ChooseCandidateAndVoteView

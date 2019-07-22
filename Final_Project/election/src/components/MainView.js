@@ -39,7 +39,7 @@ export default class MainView extends Component {
       }
         </div>
     }
-    if (true/*this.state.hasVotingEnded*/) {
+    if (this.state.hasVotingEnded) {
       return <div ref="container"> <VoteEndedView/> </div>;
     }
 

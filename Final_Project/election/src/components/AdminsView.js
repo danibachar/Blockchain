@@ -11,6 +11,8 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Spinner from 'react-bootstrap/Spinner';
+import { TableHeaderColumn ,BootstrapTable } from 'react-bootstrap-table-next';
+
 
 var TimeFormat = require('hh-mm-ss')
 
@@ -30,6 +32,7 @@ export default class AdminsView extends Component {
       myVoterStatus: 0,
       isLoading: true,
       myAccount: "",
+      votingCoinBalance: 0,
       //Dates
       dateRange: [null, null],
       endHour: null,
@@ -39,7 +42,7 @@ export default class AdminsView extends Component {
       registerCandidate: {fullName: "", address: "", agenda: ""},
       //Voter
       votersToAdd: { addresses: [] },
-      voters: []
+      registeredVoters:[],
      };
      //Events
      this.contractEvents = this.contractEvents.bind(this);
@@ -72,6 +75,8 @@ export default class AdminsView extends Component {
     const candidatesVotesCount = candidates.map(x => x.voteCount);
 
     const account = el.getAccount();
+    const registeredVoters = await el.registeredVoters();
+    const votingCoinBalance = await el.votingCoinBalance();
     const isVotingDatesConfigured = await el.isVotingDatesConfigured();
     const startDate = await el.startDate();
     const endDate = await el.endDate();
@@ -85,6 +90,8 @@ export default class AdminsView extends Component {
       startHour: TimeFormat.fromS(startDate.getHours()*60 + startDate.getMinutes()),
       endHour: TimeFormat.fromS(endDate.getHours()*60 + endDate.getMinutes()),
       isVotingDatesConfigured: isVotingDatesConfigured,
+      registeredVoters: registeredVoters,
+      votingCoinBalance: votingCoinBalance,votingCoinBalance
     });
   }
 
@@ -119,7 +126,6 @@ export default class AdminsView extends Component {
   }
 
   async addVotersFromFile(votersList) {
-    console.log(votersList)
     this.state.votersToAdd.addresses = votersList.map(v=>v[0]);
     await this.addVoters()
   }
@@ -170,14 +176,29 @@ export default class AdminsView extends Component {
       }
         </div>
     }
+
     let calendarTitle = "To start the election you must select a voting time frame"
     if (this.state.isVotingDatesConfigured) {
       calendarTitle = "Voting Dates configured, you may start register voters and candidates"
     }
+
+    var registeredVoters = []
+    var i = 0;
+    for (i = 0; i< this.state.registeredVoters.length; i++) {
+      registeredVoters.push({
+        id:i,
+        address: this.state.registeredVoters[i]
+      })
+    }
+    console.log("$$$$")
+    console.log(registeredVoters)
+    console.log("####")
+
     return <div ref="container">
       { <h2>Hello, {this.state.myAccount}.</h2> }
       { <h2>You are an Admin.</h2> }
-      { <h4></h4> }
+      { <h4>Wallet Balance: {this.state.votingCoinBalance}.</h4> }
+      { <h4>Set dates to start config election</h4> }
       {
         < Calendar
         onChange={this.setElectionDate}
@@ -283,6 +304,16 @@ export default class AdminsView extends Component {
         candidatesVotesCount={this.state.candidatesVotesCount}
         />
       }
+      { <h4>Registered Voters:</h4> }
     </div>
   }
 }
+
+
+// {
+  // <BootstrapTable keyField='id' data={ registeredVoters } columns={ [{dataField:'id', text: 'ID',dataField: 'addrss', text: 'Register Voters' }] } />
+//   <BootstrapTable data={ registeredVoters } >
+//     <TableHeaderColumn dataField='id' isKey={ true }>ID</TableHeaderColumn>
+//     <TableHeaderColumn dataField='address'>Register Voters</TableHeaderColumn>
+//   </BootstrapTable>
+// }
