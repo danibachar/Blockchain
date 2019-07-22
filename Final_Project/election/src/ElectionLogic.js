@@ -74,11 +74,12 @@ class ElectionWeb3 {
     }
     this.isListening = true;
     // Register Events
+
     this.electionInstance.adminSwitchEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
-    this.electionInstance.votingEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
-    this.electionInstance.candidateEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
-    this.electionInstance.addVoterEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
-    this.electionInstance.gotPaid({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.VotingTookPlace({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.CandidatesAdded({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.VotersAdded({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
+    this.electionInstance.VoterGotPaidForVoting({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
 
   }
 
