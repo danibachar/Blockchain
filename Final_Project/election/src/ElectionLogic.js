@@ -125,9 +125,9 @@ class ElectionWeb3 {
 
   async setElectionDates({startDate, endDate}) {
     try {
-      const s = Math.floor(startDate.getTime() / 1000);
-      const e = Math.floor(endDate.getTime() / 1000);
-      const res = await this.electionInstance.defineVotingDates(s, e, {from: this.account });
+      const res = await this.electionInstance.defineVotingDates(
+        startDate.getTime(),  endDate.getTime(), {from: this.account }
+      );
       return res;
     } catch (error){
       console.log(error)
@@ -144,7 +144,7 @@ class ElectionWeb3 {
         candidate.fullName,
         candidate.agenda,
         candidate.image,
-        candidate.address, 
+        candidate.address,
         {from: this.account }
       );
       return res;
@@ -199,11 +199,8 @@ class ElectionWeb3 {
   }
   async getCandidates() {
     try {
-      // Candidates Count
       const count =  await this.electionInstance.numberOfCandidates();
-
       var candidates = []
-
       for (var i = 1; i <= count; i++) {
         const candidate = await this.electionInstance.candidates(i);
         candidates.push({
@@ -259,9 +256,9 @@ class ElectionWeb3 {
   }
 
   formatDate = timestamp => {
-    const date = new Date(timestamp*1000);
+    const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
-      return null;
+      return new Date();
     }
     return date;
   }
