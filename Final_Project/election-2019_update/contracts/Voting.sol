@@ -255,6 +255,32 @@ contract Voting {
 
 	event CoinsWereTransfer(address indexed sender, address indexed receiver, uint amount);
 
+
+
+
+
+/*
+voter can request from admin to get voting rights
+function for pending request
+mapping form a key (counter) to address
+insure he doesn't have voting rights
+function move from pendeing to voters
+*/
+	mapping (uint => address) public pendingVoters;
+
+	uint public numberOfPendingRequest; // make sure to initaliz with in constructor with
+
+	function addNewPenddingRequest(address _requester) public {
+		require(voters[_requester] == 0, "You have voitng rights");
+		numberOfPendingRequest++;
+		pendeingVoters[numberOfPendingRequest] = _requester;
+		emit newRequest(_requester);
+	}
+	event newRequest (address indexed _requesterAddress);
+
+	function viewPendingRequest() public onlyAdmin beforeVotingStarted {
+
+	}
 }
 
 
@@ -275,6 +301,5 @@ Tasks for Tom:
 	3.2. Add Installation instructions - after we are done
 	3.3. Add demonstration video - after we are done
 	3.4. Add known bugs - after we are done
-4. bonos something nice
 5. read about how truffle works with respect to migrations
 */

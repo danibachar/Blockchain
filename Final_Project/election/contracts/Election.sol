@@ -50,7 +50,7 @@ contract Election {
 	modifier onlyAdmin { require( msg.sender == admin, "Only Admin can call this function.");_; }
 
 	// The modifier (whileVoting) limits changes after voting started (such as adding a candidate or adding voters)
-		modifier whileVoting { require(now < votingEndDate && now >= votingStartDate, "Voting has started.");_; }
+	modifier whileVoting { require(now < votingEndDate && now >= votingStartDate, "Voting has started.");_; }
 
 	// The modifier (beforeVotingStarted) insure that now is prior to voting start date
 	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has noNOTt started yet .");_; }
@@ -215,4 +215,41 @@ contract Election {
 		admin = _admin;
 		emit adminSwitchEvent();
 	}
+	//--------------------------------------------------------------------------------------------------------------------------------//
+
+/* voter can request from admin to get voting rights
+function for pending request
+mapping form a key (counter) to address
+insure he doesn't have voting rights
+function move from pendeing to voters */
+
+	//mapping (uint => mapping(address => uint)) public pendingVoters; // can be done with only maaping (uint => address)
+	mapping (uint => address) public pendingVoters;
+	uint public numberOfPendingRequest;
+
+	/* The function (addNewRequesst) can be used only before voting started (with the help of the beforeVoting modifer).
+	It the the requester hasn't have voting rights and does n ot have anther pendding request.
+	update requester status to pendding request (voters == 4) and updating the pendingVoters mapping */
+	function addNewRequest () public beforeVotingStarted {
+		require(voters[msg.sender] == 0, "The request is invalid"); // insure he hasn't have voting rights
+		voters[msg.sender] = 4; // update requester status to pendding request!!!!!!!!
+		numberOfPendingRequest++; // increase counter by one
+
+	}
+	/* The function (getPendingRequesters) returns an array of address, oreder by the key in pending voters */
+	function getPendingRequesters() public view onlyAdmin beforeVotingStarted returns(address[] memory _pendingRequesters) {
+		for(uint i = 1; i <= numberOfPendingRequest; i++) {
+			_pendingRequesters[i] = pendingVoters[i];
+		}
+		return (_pendingRequesters);
+	}
+
+	function approveRequest(uint _requesterId) public onlyAdmin beforeVotingStarted {
+		require(voters[pendingVoters[_requesterId]] == 4, "Can't approve");
+		voters[pendingVoters[_requesterId]] == 1; // update his voting rigths
+		pendingVoters[_requesterId] = pendingVoters[numberOfPendingRequest];
+		numberOfPendingRequest--;
+
+	}
+
 }
