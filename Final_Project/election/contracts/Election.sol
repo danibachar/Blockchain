@@ -22,7 +22,8 @@ contract Election {
 	"0" stands for no voting rights
 	"1" stands for the user has a voting & question rights that wasn't exercised
 	"2" stands for the user has a voting but asked a question
-	"3" stands for the user has voted */
+	"3" stands for the user has voted
+	"4" stands for pending request for voting rights */
 	mapping(address => uint) public voters;
 
 	mapping(uint => address) public registeredVoters;
@@ -75,15 +76,14 @@ contract Election {
 		return coin.voterBalance(_coinOwner);
 	}
 
+
 	//MARK: - Setters
 	/* The function (addingCandidate) is limited for admin use only (with the help of the onlyAdmin modifier)
 	and can be used only before voting starts (with the help of the beforeVotingStarted modifier), that is, adding a new
 	candidate should take place only before voting starts */
 	function addingCandidate (string memory _name, string memory _agenda, string memory _picture, address _address) public onlyAdmin beforeVotingStarted { // Adding a new candidate to candidates mapping
 		numberOfCandidates++;
-		candidates[numberOfCandidates] = Candidate(
-			numberOfCandidates, _name, _agenda, 0, _picture, _address
-		);
+		candidates[numberOfCandidates] = Candidate(numberOfCandidates, _name, _agenda, 0, _picture, _address);
 		emit CandidatesAdded(numberOfCandidates);
 	}
 
@@ -127,8 +127,10 @@ contract Election {
 	/* The function (getPaid) will reward any voter which is entitle, that is, either the voter voted or
 	he asked a question were all candidates answered */
 	function getPaid (address _receiver) private {
-		uint votingCoinTotalAmount = coin.votingCoinTotalSupply();
-		coin.transferCoin(_receiver, votingCoinTotalAmount/numberOfVoters);
+		//uint votingCoinTotalAmount = coin.votingCoinTotalSupply();
+		//coin.transferCoin(_receiver, votingCoinTotalAmount/numberOfVoters);
+		require(coin.voterBalance(msg.sender) > 0, "Next time please vote earlier");
+		coin.transferCoin(_receiver, 1); // new line - 1 coin for a vote
 		emit VoterGotPaidForVoting(_receiver);
 	}
 
