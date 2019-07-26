@@ -13,6 +13,8 @@ import BootstrapTable from 'react-bootstrap-table-next';
 import Form from 'react-bootstrap/Form'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Image from 'react-bootstrap/Image';
+import Card from 'react-bootstrap/Card';
+
 //Layout
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -100,6 +102,7 @@ export default class VotersView extends Component {
   //MARK: - Votes
   handleCandidateSelectionChange = selectedCandidates => {
     this.setState({ selectedCandidates });
+    this.updateState();
   };
 
   questionTextChangeEvent = event => {
@@ -132,12 +135,12 @@ export default class VotersView extends Component {
     <Container> <Row><Col> { <h4>Voting Dates Not set yet</h4>} </Col></Row> </Container>
     </div>
     if (this.state.isVotingDatesConfigured) {
-      const startDate = this.state.startDate.toString();
-      const endDate = this.state.endDate.toString();
+      const startDate = this.state.startDate.toLocaleString();
+      const endDate = this.state.endDate.toLocaleString();
       datesContainer = <div ref="container">
       <Container>
         <Row>
-          <Col> { <h4>Start Voting Date</h4> } } </Col>
+          <Col> { <h4>Start Voting Date</h4> } </Col>
           <Col> {<h4> {startDate} </h4>} </Col>
         </Row>
         <Row>
@@ -154,14 +157,38 @@ export default class VotersView extends Component {
 
       const candidateIndex = this.state.selectedCandidates.value - 1;
       let candidate = {"image": null}
-      if (candidateIndex > 0 && this.state.candidates.length > candidateIndex) {
+      if (candidateIndex >= 0 && this.state.candidates.length > candidateIndex) {
         candidate = this.state.candidates[candidateIndex]
       }
       const candidateImage = candidate.image
       if (!candidateImage) {
         return null
       }
-      return <Col> <Image style={{width: 50, height: 'auto'}} src={candidateImage} roundedCircle /> </Col>
+
+      const now = new Date()
+      const whileVoting = (this.state.startDate < now) && (this.state.endDate > now);
+      const status = parseInt(this.state.myVoterStatus);
+      const canVote = (0 < status && status < 3 && whileVoting);
+      let votingButtonTitle = "Vote"
+      if (this.state.myVoterStatus == 0) {
+        votingButtonTitle = "You are not listed as a voter"
+      }
+      if (!canVote) {
+        votingButtonTitle = "You already voted - you can vote only once"
+      }
+
+      return  <Container>
+        <Card style={{ width: '18rem' }}>
+          <Card.Img variant="top" src={candidateImage} />
+            <Card.Body>
+              <Card.Title>{candidate.name}</Card.Title>
+              <Card.Text> {candidate.agenda} </Card.Text>
+              <Button variant="primary" disabled={!canVote} onClick={this.vote} > {votingButtonTitle} </Button>
+            </Card.Body>
+          </Card>
+      </Container>
+
+      // return <Col> <Image style={{width: 50, height: 'auto'}} src={candidateImage} roundedCircle /> </Col>
   }
   loaderContainer() {
     if (!this.state.isLoading) {
@@ -183,21 +210,8 @@ export default class VotersView extends Component {
   }
 
   render() {
-
-    const now = new Date()
-    const whileVoting = (this.state.startDate < now) && (this.state.endDate > now);
     const status = parseInt(this.state.myVoterStatus);
-    const canVote = (0 < status && status < 3 && whileVoting);
-    const isRegisterAsVoterAlreay = (0 < status);
-
-    let votingButtonTitle = "Vote"
-    if (this.state.myVoterStatus == 0) {
-      votingButtonTitle = "You are not listed as a voter"
-    }
-    if (!canVote) {
-      votingButtonTitle = "You already voted - you can vote only once"
-    }
-
+    const isRegisterAsVoterAlreay = (0 < status)
     return <div ref="container">
     <Container>
       <Row>
@@ -220,28 +234,20 @@ export default class VotersView extends Component {
         }
         </Col>
       </Row>
-      <Row> <Col>
-        {
-          <Button
-          variant="primary"
-          disabled={!canVote}
-          onClick={this.vote}
-          >
-          {votingButtonTitle}
-          </Button>
-        }
-      </Col> </Row>
-      <Row> <Col>
-        {
-          <Button
-          variant="primary"
-          disabled={isRegisterAsVoterAlreay}
-          onClick={this.registerAsVoter}
-          >
-          {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
-          </Button>
-        }
-      </Col> </Row>
+      <Row>
+        <Col>
+          {
+            <Button
+            variant="primary"
+            disabled={isRegisterAsVoterAlreay}
+            onClick={this.registerAsVoter}
+            >
+            {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
+            </Button>
+          }
+        </Col>
+      </Row>
+      <Row> <Col>{this.candidateImageContainer()} </Col> </Row>
       <Row>
         <Col>
           {
