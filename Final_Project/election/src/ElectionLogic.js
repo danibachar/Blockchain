@@ -87,7 +87,6 @@ class ElectionWeb3 {
     }
     this.isListening = true;
     // Register Events
-    this.electionInstance.adminSwitchEvent({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
     this.electionInstance.VotingTookPlace({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
     this.electionInstance.CandidatesAdded({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)
     this.electionInstance.VotersAdded({ fromBlock: 0, toBlock: 'latest' }, eventsCallBack)

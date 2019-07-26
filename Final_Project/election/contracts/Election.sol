@@ -206,19 +206,6 @@ contract Election {
 		event NewAnswer (uint indexed questionId, address indexed candidateId);
 	//--------------------------------------------------------------------------------------------------------------------------------//
 
-	// QA Functions
-
-	// This function is just a QA function to test functionality.
-	// It should not appear on a real contract - we need to understand how to set it appropriatly
-	// We are aware of the security problem, but because this is just for showing functionality
-	event adminSwitchEvent ();
-
-	function setAdmin(address _admin) public {
-		admin = _admin;
-		emit adminSwitchEvent();
-	}
-	//--------------------------------------------------------------------------------------------------------------------------------//
-
 /* voter can request from admin to get voting rights
 function for pending request
 mapping form a key (counter) to address

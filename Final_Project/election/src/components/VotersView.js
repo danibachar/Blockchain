@@ -13,6 +13,10 @@ import BootstrapTable from 'react-bootstrap-table-next';
 import Form from 'react-bootstrap/Form'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Image from 'react-bootstrap/Image';
+//Layout
+import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
 var el = new ElectionWeb3()
 
@@ -40,7 +44,6 @@ export default class VotersView extends Component {
      //Actions
      this.vote = this.vote.bind(this);
      this.registerAsVoter = this.registerAsVoter.bind(this);
-     this.becomeAdmin = this.becomeAdmin.bind(this);
      this.updateState = this.updateState.bind(this);
      this.addQuestion = this.addQuestion.bind(this);
 
@@ -112,13 +115,7 @@ export default class VotersView extends Component {
     const res = await el.castVote({candidateId});
     this.setState({ isLoading: false });
   };
-
-  async becomeAdmin()  {
-    this.setState({ isLoading: true });
-    const res = await el.becomeAdmin();
-    this.setState({ isLoading: false });
-  };
-
+  
   async addQuestion()  {
     this.setState({ isLoading: true });
     const res = await el.addQuestion({ question: this.state.question });
@@ -167,6 +164,10 @@ export default class VotersView extends Component {
     const candidateImage = candidate.image
 
     return <div ref="container">
+    <Container>
+      <Row>
+      </Row>
+    </Container>
     { <h2>Hello, {this.state.myAccount}!</h2> }
     { <h4> {electionDateTitle} </h4> }
     { <h4>Wallet Balance: {this.state.votingCoinBalance}</h4> }
