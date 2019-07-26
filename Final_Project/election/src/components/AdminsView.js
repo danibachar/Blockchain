@@ -197,6 +197,26 @@ export default class AdminsView extends Component {
     this.setState({ isLoading: false });
   }
 
+  //MARK: - Rederers
+  loaderContainer() {
+    if (!this.state.isLoading) {
+      return null
+    }
+    return <div ref="container">
+    <Container>
+      <Row>
+        <Col>
+          {
+            <Spinner animation="border" role="status">
+              <span className="sr-only">Loading... you might need to approve the transaction in your Metamask account</span>
+            </Spinner>
+          }
+        </Col>
+      </Row>
+    </Container>
+    </div>
+  }
+
   render() {
 
     let calendarTitle = "To start the election you must select a voting time frame"
@@ -216,9 +236,11 @@ export default class AdminsView extends Component {
     return <div ref="container">
       <Container>
         <Row>
-          <Col>{ this.state.isLoading ? <h2>Loading...</h2> : <h2>Hello, {this.state.myAccount}.</h2>}</Col>
+          { this.loaderContainer() }
+          <Col>{ <h2>Hello, {this.state.myAccount}.</h2>}</Col>
         </Row>
         <Row>
+
           <Col> {<h4>You are an Admin.</h4>} </Col>
           <Col> {<h4>Wallet Balance: {this.state.votingCoinBalance}.</h4>} </Col>
         </Row>

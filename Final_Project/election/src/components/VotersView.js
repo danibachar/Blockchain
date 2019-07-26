@@ -29,6 +29,7 @@ export default class VotersView extends Component {
       candidatesNames: [],
       candidatesVotesCount: [],
       candidatesIds: [],
+      candidates:[],
       // Selection For Voting
       selectedCandidates: {value: -1, label: ""},
       candidatesSelectionOptions: [],
@@ -155,10 +156,10 @@ export default class VotersView extends Component {
 
   candidateImageContainer() {
 
-      const candidateIndex = this.state.selectedCandidates.value - 1;
-      let candidate = {"image": null}
-      if (candidateIndex >= 0 && this.state.candidates.length > candidateIndex) {
-        candidate = this.state.candidates[candidateIndex]
+      const candidateId = this.state.selectedCandidates.value;
+      let candidate = this.state.candidates.find((c)=>{return c.id == candidateId});
+      if (!candidate) {
+        return null
       }
       const candidateImage = candidate.image
       if (!candidateImage) {
