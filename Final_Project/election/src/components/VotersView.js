@@ -172,8 +172,9 @@ export default class VotersView extends Component {
       let votingButtonTitle = "Vote"
       if (this.state.myVoterStatus == 0) {
         votingButtonTitle = "You are not listed as a voter"
-      }
-      if (!canVote) {
+      } else if (!whileVoting) {
+        votingButtonTitle = "Voting has not started yet"
+      } else if (!canVote) {
         votingButtonTitle = "You already voted - you can vote only once"
       }
 
