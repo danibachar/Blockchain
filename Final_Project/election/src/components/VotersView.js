@@ -211,8 +211,6 @@ export default class VotersView extends Component {
   }
 
   render() {
-    const status = parseInt(this.state.myVoterStatus);
-    const isRegisterAsVoterAlreay = (0 < status)
     return <div ref="container">
     <Container>
       <Row>
@@ -235,19 +233,6 @@ export default class VotersView extends Component {
         }
         </Col>
       </Row>
-      <Row>
-        <Col>
-          {
-            <Button
-            variant="primary"
-            disabled={isRegisterAsVoterAlreay}
-            onClick={this.registerAsVoter}
-            >
-            {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
-            </Button>
-          }
-        </Col>
-      </Row>
       <Row> <Col>{this.candidateImageContainer()} </Col> </Row>
       <Row>
         <Col>
@@ -263,15 +248,15 @@ export default class VotersView extends Component {
                 onChange={this.questionTextChangeEvent}
                />
             </Form.Group>
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={!this.state.isVotingDatesConfigured}
-              onClick={this.addQuestion}
-            >
-              {'Ask a Quesion'}
-            </Button>
           </Form>
+          }
+          {
+            <Button
+            variant="primary"
+            type="submit"
+            disabled={!this.state.isVotingDatesConfigured}
+            onClick={this.addQuestion} > {'Ask a Quesion'}
+            </Button>
           }
         </Col>
       </Row>
