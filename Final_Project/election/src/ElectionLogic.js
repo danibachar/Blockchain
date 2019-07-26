@@ -100,7 +100,6 @@ class ElectionWeb3 {
 
   }
 
-
   async addAnswer({ answer, questionId }) {
     if (!this.electionInstance) {
       console.log("Contract not deployed");
@@ -332,6 +331,25 @@ class ElectionWeb3 {
       const isAdmin =  (adminAccout.toUpperCase() == this.account.toUpperCase());
       this.state.isAdmin = isAdmin;
       return isAdmin;
+    } catch (error) {
+      console.log(error);
+      alert(error)
+      return false;
+    }
+  }
+
+  async isElectionEnded() {
+    if (!this.electionInstance) {
+      console.log("Contract not deployed");
+      return false
+    }
+    if (this.state.isElectionEnded !== null) {
+      return this.state.isElectionEnded;
+    }
+    try {
+      const endVoting = await this.electionInstance.endVoting()
+      this.state.isElectionEnded = endVoting;
+      return endVoting;
     } catch (error) {
       console.log(error);
       alert(error)

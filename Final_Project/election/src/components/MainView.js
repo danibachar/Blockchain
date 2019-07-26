@@ -7,6 +7,9 @@ import VoteEndedView from './VoteEndedView';
 
 
 import Spinner from 'react-bootstrap/Spinner';
+import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
 var el = new ElectionWeb3()
 
@@ -26,17 +29,28 @@ export default class MainView extends Component {
     this.setState({isLoading: true})
     await el.initWeb3();
     const isAdmin = await el.isAdmin();
-    this.setState({isAdmin: isAdmin, isLoading: false})
+    const isElectionEnded = await el.isElectionEnded()
+    this.setState({
+      hasVotingEnded: isElectionEnded,
+       isAdmin: isAdmin,
+       isLoading: false
+     })
   }
 
   render() {
     if (this.state.isLoading) {
       return <div ref="container">
-      {
-        <Spinner animation="border" role="status">
-          <span className="sr-only">Loading...</span>
-        </Spinner>
-      }
+        <Container>
+          <Row>
+            <Col>
+              {
+                <Spinner animation="border" role="status">
+                  <span className="sr-only">Loading...</span>
+                </Spinner>
+              }
+            </Col>
+          </Row>
+        </Container>
         </div>
     }
     if (this.state.hasVotingEnded) {

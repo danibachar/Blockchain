@@ -46,6 +46,9 @@ export default class VotersView extends Component {
      this.registerAsVoter = this.registerAsVoter.bind(this);
      this.updateState = this.updateState.bind(this);
      this.addQuestion = this.addQuestion.bind(this);
+     //Containers
+     this.datesContainer = this.datesContainer.bind(this);
+     this.candidateImageContainer = this.candidateImageContainer.bind(this);
 
   }
 
@@ -115,7 +118,7 @@ export default class VotersView extends Component {
     const res = await el.castVote({candidateId});
     this.setState({ isLoading: false });
   };
-  
+
   async addQuestion()  {
     this.setState({ isLoading: true });
     const res = await el.addQuestion({ question: this.state.question });
@@ -123,17 +126,63 @@ export default class VotersView extends Component {
   };
 
 
-  render() {
-
-    if (this.state.isLoading) {
-      return <div ref="container">
-      {
-        <Spinner animation="border" role="status">
-          <span className="sr-only">Loading... you might need to approve the transaction in your Metamask account</span>
-        </Spinner>
-      }
-        </div>
+  datesContainer() {
+    let datesContainer = <div
+    ref="container">
+    <Container> <Row><Col> { <h4>Voting Dates Not set yet</h4>} </Col></Row> </Container>
+    </div>
+    if (this.state.isVotingDatesConfigured) {
+      const startDate = this.state.startDate.toString();
+      const endDate = this.state.endDate.toString();
+      datesContainer = <div ref="container">
+      <Container>
+        <Row>
+          <Col> { <h4>Start Voting Date</h4> } } </Col>
+          <Col> {<h4> {startDate} </h4>} </Col>
+        </Row>
+        <Row>
+          <Col>{<h4> End Voting Date</h4>} </Col>
+          <Col>{<h4> {endDate} </h4>}</Col>
+        </Row>
+      </Container>
+      </div>
     }
+    return datesContainer
+  }
+
+  candidateImageContainer() {
+
+      const candidateIndex = this.state.selectedCandidates.value - 1;
+      let candidate = {"image": null}
+      if (candidateIndex > 0 && this.state.candidates.length > candidateIndex) {
+        candidate = this.state.candidates[candidateIndex]
+      }
+      const candidateImage = candidate.image
+      if (!candidateImage) {
+        return null
+      }
+      return <Col> <Image style={{width: 50, height: 'auto'}} src={candidateImage} roundedCircle /> </Col>
+  }
+  loaderContainer() {
+    if (!this.state.isLoading) {
+      return null
+    }
+    return <div ref="container">
+    <Container>
+      <Row>
+        <Col>
+          {
+            <Spinner animation="border" role="status">
+              <span className="sr-only">Loading... you might need to approve the transaction in your Metamask account</span>
+            </Spinner>
+          }
+        </Col>
+      </Row>
+    </Container>
+    </div>
+  }
+
+  render() {
 
     const now = new Date()
     const whileVoting = (this.state.startDate < now) && (this.state.endDate > now);
@@ -149,85 +198,78 @@ export default class VotersView extends Component {
       votingButtonTitle = "You already voted - you can vote only once"
     }
 
-    let electionDateTitle = "Voting Dates Not set yet"
-    if (this.state.isVotingDatesConfigured) {
-      const startDate = this.state.startDate.toString();
-      const endDate = this.state.endDate.toString();
-      electionDateTitle = "Election will run between the dates: \n" + startDate + "\n until \n" + endDate;
-    }
-
-    const candidateIndex = this.state.selectedCandidates.value - 1;
-    let candidate = {"image": null}
-    if (candidateIndex > 0 && this.state.candidates.length > candidateIndex) {
-      candidate = this.state.candidates[candidateIndex]
-    }
-    const candidateImage = candidate.image
-
     return <div ref="container">
     <Container>
       <Row>
+        { this.loaderContainer() }
+        <Col>
+          { <h4>Hello, {this.state.myAccount}!</h4> }
+        </Col>
       </Row>
+      <Row><Col> {this.datesContainer()} </Col></Row>
+      <Row><Col> { <h4>Wallet Balance: {this.state.votingCoinBalance}</h4> }</Col></Row>
+      <Row>
+        <Col>
+        {<h4>Select Candidate:</h4> }
+        {
+          <ListView
+          options={this.state.candidatesSelectionOptions}
+          selectedOption={this.state.selectedCandidates}
+          handleChange={this.handleCandidateSelectionChange}
+          />
+        }
+        </Col>
+      </Row>
+      <Row> <Col>
+        {
+          <Button
+          variant="primary"
+          disabled={!canVote}
+          onClick={this.vote}
+          >
+          {votingButtonTitle}
+          </Button>
+        }
+      </Col> </Row>
+      <Row> <Col>
+        {
+          <Button
+          variant="primary"
+          disabled={isRegisterAsVoterAlreay}
+          onClick={this.registerAsVoter}
+          >
+          {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
+          </Button>
+        }
+      </Col> </Row>
+      <Row>
+        <Col>
+          {
+          <Form>
+            <Form.Group controlId="formQuestion">
+              <Form.Label>Question For All Candidates: </Form.Label>
+              <Form.Control
+                as="input"
+                type="text"
+                placeholder="Enter Question"
+                value={this.state.question}
+                onChange={this.questionTextChangeEvent}
+               />
+            </Form.Group>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={!this.state.isVotingDatesConfigured}
+              onClick={this.addQuestion}
+            >
+              {'Ask a Quesion'}
+            </Button>
+          </Form>
+          }
+        </Col>
+      </Row>
+      <Row> <Col> <QuestionsAndAnswersView/> </Col></Row>
     </Container>
-    { <h2>Hello, {this.state.myAccount}!</h2> }
-    { <h4> {electionDateTitle} </h4> }
-    { <h4>Wallet Balance: {this.state.votingCoinBalance}</h4> }
-    {<h4>Select Candidate:</h4> }
-    {
-      <ListView
-      options={this.state.candidatesSelectionOptions}
-      selectedOption={this.state.selectedCandidates}
-      handleChange={this.handleCandidateSelectionChange}
-      />
-    }
-    {
-      candidateImage ? <Image
-        style={{width: 50, height: 'auto'}}
-        src={candidateImage} roundedCircle
-      /> : null
-    }
-    {
-      <Button
-      variant="primary"
-      disabled={!canVote}
-      onClick={this.vote}
-      >
-      {votingButtonTitle}
-      </Button>
-    }
-    {
-      <Button
-      variant="primary"
-      disabled={isRegisterAsVoterAlreay}
-      onClick={this.registerAsVoter}
-      >
-      {isRegisterAsVoterAlreay ? 'You are in the voters list' : 'Register As Voter'}
-      </Button>
-    }
-    {
-    <Form>
-      <Form.Group controlId="formQuestion">
-        <Form.Label>Question For All Candidates: </Form.Label>
-        <Form.Control
-          as="input"
-          type="text"
-          placeholder="Enter Question"
-          value={this.state.question}
-          onChange={this.questionTextChangeEvent}
-         />
-      </Form.Group>
-      <Button
-        variant="primary"
-        type="submit"
-        disabled={false}
-        onClick={this.addQuestion}
-      >
-        {'Ask a Quesion'}
-      </Button>
-    </Form>
-    }
-    <div ref="container"> <QuestionsAndAnswersView/> </div>
     </div>
   }
 }
-//{this.candidates[this.state.selectedCandidates.value].image}
-//<Image src="https://i0.wp.com/www.winhelponline.com/blog/wp-content/uploads/2017/12/user.png?resize=256%2C256&quality=100&ssl=1/50px50" roundedCircle />
