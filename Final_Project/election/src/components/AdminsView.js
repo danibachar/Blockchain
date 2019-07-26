@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import ElectionWeb3 from '../ElectionLogic';
 
 import ChartsView from './ChartsView'
+import QuestionsAndAnswersView from './QuestionsAndAnswersView'
 
 import Calendar from 'react-calendar';
 import TimePicker from 'react-time-picker';
@@ -12,6 +13,10 @@ import Form from 'react-bootstrap/Form'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Spinner from 'react-bootstrap/Spinner';
 import BootstrapTable from 'react-bootstrap-table-next';
+//Layout
+import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
 
 var TimeFormat = require('hh-mm-ss')
@@ -193,15 +198,6 @@ export default class AdminsView extends Component {
   }
 
   render() {
-    if (this.state.isLoading) {
-      return <div ref="container">
-      {
-        <Spinner animation="border" role="status">
-          <span className="sr-only">Loading... you might need to approve the transaction in your Metamask account</span>
-        </Spinner>
-      }
-        </div>
-    }
 
     let calendarTitle = "To start the election you must select a voting time frame"
     if (this.state.isVotingDatesConfigured) {
@@ -216,143 +212,187 @@ export default class AdminsView extends Component {
         address: this.state.registeredVoters[i]
       })
     }
-    console.log("$$$$")
-    console.log(registeredVoters)
-    console.log("####")
 
     return <div ref="container">
-      { <h2>Hello, {this.state.myAccount}.</h2> }
-      { <h2>You are an Admin.</h2> }
-      { <h4>Wallet Balance: {this.state.votingCoinBalance}.</h4> }
-      { <h4>Set dates to start config election</h4> }
-      {
-        < Calendar
-        onChange={this.setElectionDate}
-        value={this.state.dateRange}
-        selectRange={true}
-        minDate={(new Date())}
-        />
-      }
-      {
-        <TimePicker
-        onChange={this.setStartHour}
-        value={this.state.startHour}
-        disableClock={false}
-        />
-      }
-      {
-        <TimePicker
-        onChange={this.setEndHour}
-        value={this.state.endHour}
-        disableClock={false}
-        />
-      }
-      {
-        <Button
-        variant="primary"
-        disabled={this.state.dateRange.length < 2 && this.state.dateRange[0] == this.state.dateRange[1]}
-        onClick={(this.state.dateRange.length == 2 && this.state.dateRange[0] != this.state.dateRange[1]) ? this.setElectionDates : null}
-        >
-        {'Set Election Dates'}
-        </Button>
-      }
-      { <h4>Only admins can register new Candidates:</h4> }
-      {
-      <Form>
-        <Form.Group controlId="formFullName">
-          <Form.Label>Candidate Full Name: </Form.Label>
-          <Form.Control
-            as="input"
-            type="text"
-            placeholder="Enter Full Name"
-            value={this.state.registerCandidate.fullName}
-            onChange={this.setRegisterCandidateFullName}
-           />
-        </Form.Group>
-        <Form.Group controlId="formAgenda">
-          <Form.Label>Candidate Agenda: </Form.Label>
-          <Form.Control
-            as="input"
-            type="text"
-            placeholder="Enter Agenda"
-            value={this.state.registerCandidate.agenda}
-            onChange={this.setRegisterCandidateAgenda}
-          />
-        </Form.Group>
-        <Form.Group controlId="formAgenda">
-          <Form.Label>Candidate image url: </Form.Label>
-          <Form.Control
-            as="input"
-            type="text"
-            placeholder="Enter url"
-            value={this.state.registerCandidate.image}
-            onChange={this.setRegisterCandidateImage}
-          />
-        </Form.Group>
-        <Form.Group controlId="formImageUrl">
-          <Form.Label>Candidate public address: </Form.Label>
-          <Form.Control
-            as="input"
-            type="text"
-            placeholder="Enter address"
-            value={this.state.registerCandidate.address}
-            onChange={this.setRegisterCandidateAddress}
-          />
-        </Form.Group>
-        <Button
-          variant="primary"
-          type="submit"
-          disabled={false}
-          onClick={this.registerCandidate}
-        >
-          {'Register Candidate'}
-        </Button>
-      </Form>
-      }
-      { <h4>Only admins can register new voters:</h4> }
-      {
-      <Form>
-        <Form.Group controlId="formVoterAddress">
-          <Form.Label>Voter Address: </Form.Label>
-          <Form.Control
-            as="input"
-            type="text"
-            placeholder="Enter Address"
-            value={this.state.votersToAdd.address}
-            onChange={this.setRequestedVoterAddress}
-           />
-        </Form.Group>
-        <Button
-          variant="primary"
-          type="submit"
-          disabled={false}
-          onClick={this.addVoters}
-        >
-          {'Register Voter'}
-        </Button>
-      </Form>
-      }
-      {
-        <CSVReader
-        cssClass="csv-reader-input"
-        label="Upload CSV file with a list of voters to register"
-        onFileLoaded={this.addVotersFromFile}
-        onError={this.errorInFileUpload}
-        inputId="ObiWan"
-        inputStyle={{color: 'red'}}
-      />
-      }
-      { <h4>Live election status:</h4> }
-      {
-        <ChartsView
-        candidatesNames={this.state.candidatesNames}
-        candidatesVotesCount={this.state.candidatesVotesCount}
-        />
-      }
-      { <h4>Registered Voters:</h4> }
-      {
-        <BootstrapTable keyField='id' data={ registeredVoters } columns={ [{dataField:'id', text: 'ID'},{dataField: 'address', text: 'Register Voters' }] } />
-      }
+      <Container>
+        <Row>
+          <Col>{ this.state.isLoading ? <h2>Loading...</h2> : <h2>Hello, {this.state.myAccount}.</h2>}</Col>
+        </Row>
+        <Row>
+          <Col> {<h4>You are an Admin.</h4>} </Col>
+          <Col> {<h4>Wallet Balance: {this.state.votingCoinBalance}.</h4>} </Col>
+        </Row>
+        <Row>
+          <Col>{ <h4>Set dates to start config election</h4> }</Col>
+        </Row>
+        <Row>
+          <Col>
+          {
+            < Calendar
+            onChange={this.setElectionDate}
+            value={this.state.dateRange}
+            selectRange={true}
+            minDate={(new Date())}
+            />
+          }
+          </Col>
+          <Col>
+            { <h4>Only admins can register new Candidates:</h4> }
+            {
+            <Form>
+              <Form.Group controlId="formFullName">
+                <Form.Label>Candidate Full Name: </Form.Label>
+                <Form.Control
+                  as="input"
+                  type="text"
+                  placeholder="Enter Full Name"
+                  value={this.state.registerCandidate.fullName}
+                  onChange={this.setRegisterCandidateFullName}
+                 />
+              </Form.Group>
+              <Form.Group controlId="formAgenda">
+                <Form.Label>Candidate Agenda: </Form.Label>
+                <Form.Control
+                  as="input"
+                  type="text"
+                  placeholder="Enter Agenda"
+                  value={this.state.registerCandidate.agenda}
+                  onChange={this.setRegisterCandidateAgenda}
+                />
+              </Form.Group>
+              <Form.Group controlId="formAgenda">
+                <Form.Label>Candidate image url: </Form.Label>
+                <Form.Control
+                  as="input"
+                  type="text"
+                  placeholder="Enter url"
+                  value={this.state.registerCandidate.image}
+                  onChange={this.setRegisterCandidateImage}
+                />
+              </Form.Group>
+              <Form.Group controlId="formImageUrl">
+                <Form.Label>Candidate public address: </Form.Label>
+                <Form.Control
+                  as="input"
+                  type="text"
+                  placeholder="Enter address"
+                  value={this.state.registerCandidate.address}
+                  onChange={this.setRegisterCandidateAddress}
+                />
+              </Form.Group>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={false}
+                onClick={this.registerCandidate}
+              >
+                {'Register Candidate'}
+              </Button>
+            </Form>
+            }
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+          {'Set Start Hour  '}
+          {
+            <TimePicker
+            onChange={this.setStartHour}
+            value={this.state.startHour}
+            disableClock={false}
+            />
+          }
+          </Col>
+
+        </Row>
+        <Row>
+          <Col>
+          {' Set End Hour  '}
+          {
+            <TimePicker
+            onChange={this.setEndHour}
+            value={this.state.endHour}
+            disableClock={false}
+            />
+          }
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+          {
+            <Button
+            variant="primary"
+            disabled={this.state.dateRange.length < 2 && this.state.dateRange[0] == this.state.dateRange[1]}
+            onClick={(this.state.dateRange.length == 2 && this.state.dateRange[0] != this.state.dateRange[1]) ? this.setElectionDates : null}
+            >
+            {'Set Election Dates'}
+            </Button>
+          }
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            { <h4>Only admins can register new voters:</h4> }
+            {
+            <Form>
+              <Form.Group controlId="formVoterAddress">
+                <Form.Label>Voter Address: </Form.Label>
+                <Form.Control
+                  as="input"
+                  type="text"
+                  placeholder="Enter Address"
+                  value={this.state.votersToAdd.address}
+                  onChange={this.setRequestedVoterAddress}
+                 />
+              </Form.Group>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={false}
+                onClick={this.addVoters}
+              >
+                {'Register Voter'}
+              </Button>
+            </Form>
+            }
+          </Col>
+          <Col>
+            {
+              <CSVReader
+              cssClass="csv-reader-input"
+              label="Upload CSV file with a list of voters to register"
+              onFileLoaded={this.addVotersFromFile}
+              onError={this.errorInFileUpload}
+              inputId="ObiWan"
+              inputStyle={{color: 'red'}}
+            />
+            }
+            <div ref="container"> <QuestionsAndAnswersView/> </div>
+          </Col>
+          <Col>
+
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            { <h4>Live election status:</h4> }
+            {
+              <ChartsView
+              candidatesNames={this.state.candidatesNames}
+              candidatesVotesCount={this.state.candidatesVotesCount}
+              />
+            }
+          </Col>
+          <Col>
+          { <h4>Registered Voters:</h4> }
+          {
+            <BootstrapTable keyField='id' data={ registeredVoters } columns={ [{dataField:'id', text: 'ID'},{dataField: 'address', text: 'Register Voters' }] } />
+          }
+          </Col>
+        </Row>
+
+      </Container>
+
     </div>
   }
 }

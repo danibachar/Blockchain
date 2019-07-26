@@ -7,12 +7,12 @@ contract Election {
 	/* The struct (Candidates) has the following attributes:
 	Internal id, candidate name, candidate agenda, candidate voting counter, candidate picture */
 	struct Candidate {
-		uint id;
-		string name;
-		string agenda;
-		uint counter;
-		string candidatePicture;
-		address candidateAddress;
+		uint id; //0
+		string name; //1
+		string agenda; //2
+		uint counter; //3
+		string candidatePicture; //4
+		address candidateAddress; //5
 	}
 
 	// The mapping (candidates) is between candidate id to the candidates attributes
@@ -20,8 +20,8 @@ contract Election {
 
 	/* The mapping (voters) is between the voter address and {0,1,2}.
 	"0" stands for no voting rights
-	"1" stands for the user has a voting & question rights that wasn't exercised
-	"2" stands for the user has a voting but asked a question
+	"1" stands for the user has a voting right & question rights that wasn't exercised
+	"2" stands for the user has a voting right but asked a question
 	"3" stands for the user has voted
 	"4" stands for pending request for voting rights */
 	mapping(address => uint) public voters;
@@ -51,10 +51,10 @@ contract Election {
 	modifier onlyAdmin { require( msg.sender == admin, "Only Admin can call this function.");_; }
 
 	// The modifier (whileVoting) limits changes after voting started (such as adding a candidate or adding voters)
-	modifier whileVoting { require(now < votingEndDate && now >= votingStartDate, "Voting has started.");_; }
+	modifier whileVoting { require(now < votingEndDate && now >= votingStartDate, "Voting has NOT started yet.");_; }
 
 	// The modifier (beforeVotingStarted) insure that now is prior to voting start date
-	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has noNOTt started yet .");_; }
+	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has started, this is not allowed during voting time");_; }
 
 	//MARK: - Getters
   function isAdmin (address _checkAdmin) public view returns (bool TF) {
@@ -129,7 +129,8 @@ contract Election {
 	function getPaid (address _receiver) private {
 		//uint votingCoinTotalAmount = coin.votingCoinTotalSupply();
 		//coin.transferCoin(_receiver, votingCoinTotalAmount/numberOfVoters);
-		require(coin.voterBalance(msg.sender) > 0, "Next time please vote earlier");
+		//require(coin.voterBalance(msg.sender) > 0, "Next time please vote earlier");
+
 		coin.transferCoin(_receiver, 1); // new line - 1 coin for a vote
 		emit VoterGotPaidForVoting(_receiver);
 	}
@@ -165,7 +166,7 @@ contract Election {
 		/* The function (addQuestion) can be used only while voting time period (with the help of the whileVoting modifier),
 		it insure that the voter has voting & question rights, saves the question and update the counter */
 		function addQuestion (string memory _question) public whileVoting {
-			require(voters[msg.sender] == 1, "Question can't be asked"); // make sure he has voting & asking rights
+			require(voters[msg.sender] == 1 , "Question can't be asked"); // make sure he has voting & asking rights
 			numberOfQuestions++;
 			voters[msg.sender] = 2; // mark he asked a question
 			questionList[numberOfQuestions] = Question(_question, 0, msg.sender);
@@ -192,14 +193,13 @@ contract Election {
 			return (helper.length);
 		}
 
-		function isCandidate (address _helper) private view returns(bool ok) {
+		function isCandidate (address _helper) public view returns(bool ok) {
 			for (uint i = 1; i <= numberOfCandidates; i++) {
 				if (candidates[i].candidateAddress == _helper) {
 					return(true);
-				} else {
-					return(false);
 				}
 			}
+			return(false);
 		}
 
 		event NewQuestion (uint indexed questionId);
