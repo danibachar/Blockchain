@@ -68,7 +68,7 @@ contract Election {
 	}
 
 	function endVoting () public view returns (bool index) {
-		return (now > votingEndDate);
+		return (now > votingEndDate && isVotingDatesConfigured);
 	}
 
 	/* The function (balanceOf) returns the number of tokens that a particular address, 

@@ -343,9 +343,8 @@ class ElectionWeb3 {
       return this.state.isElectionEnded;
     }
     try {
-      await this.isVotingDatesConfigured()
-      const endVoting = await this.electionInstance.endVoting()
-      this.state.isElectionEnded = endVoting && this.state.isVotingDatesConfigured;
+      const endVoting = await this.electionInstance.endVoting();
+      this.state.isElectionEnded = endVoting;
       return this.state.isElectionEnded;
     } catch (error) {
       console.log(error);
