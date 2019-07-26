@@ -96,7 +96,7 @@ export default class AdminsView extends Component {
       endHour: TimeFormat.fromS(endDate.getHours()*60 + endDate.getMinutes()),
       isVotingDatesConfigured: isVotingDatesConfigured,
       registeredVoters: registeredVoters,
-      votingCoinBalance: votingCoinBalance,votingCoinBalance
+      votingCoinBalance: votingCoinBalance,
     });
   }
 

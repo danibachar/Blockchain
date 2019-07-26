@@ -18,7 +18,6 @@ contract SuperCoin {
   constructor(uint total) public {
     votingCoinTotalSupply = total;
     voterBalance[msg.sender] = total;
-    voterBalance[msg.sender] = 123987;
   }
   //MARK: - Getters
   /*

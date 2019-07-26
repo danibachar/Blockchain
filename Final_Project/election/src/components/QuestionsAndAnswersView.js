@@ -63,7 +63,6 @@ export default class QuestionsAndAnswersView extends Component {
         (value, key) => {answers.push({"id": key, "answer":value})}
       )
     }
-    console.log(answers)
     this.setState({
       questions: questions,
       questionSelectionOptions: questionSelectionOptions,
@@ -82,12 +81,10 @@ export default class QuestionsAndAnswersView extends Component {
   // ref={this.textInput} type="text" onChange={() => this.handleChange()
   handleAnswerSelectionChange = selectedQuestion => {
     const value = this.state.answer.current.value;
-    console.log(this.state.answer)
     // this.setState({ selectedQuestion });
   };
   //MARK: - Votes
   async handleQuestionSelectionChange(selectedQuestion) {
-    console.log(selectedQuestion)
     this.setState({ selectedQuestion });
     await this.updateState()
   };

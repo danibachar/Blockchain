@@ -122,9 +122,7 @@ class ElectionWeb3 {
       return null;
     }
     try {
-      console.log(question);
       const res = await this.electionInstance.addQuestion(question, {from: this.account });
-      console.log(res);
       this.state.questions.push(question);
       return res;
     } catch (error) {
@@ -228,7 +226,6 @@ class ElectionWeb3 {
       return []
     }
     if (!this.isCandidate) {
-      console.log("Only Candidate");
       return []
     }
     if (this.state.questions.length > 0) {
@@ -264,7 +261,6 @@ class ElectionWeb3 {
         }
 
       }
-      console.log("questions ", questions);
       this.state.questions = questions;
       return questions;
     } catch (error) {
@@ -343,7 +339,7 @@ class ElectionWeb3 {
       console.log("Contract not deployed");
       return false
     }
-    if (this.state.isElectionEnded !== null) {
+    if (this.state.isElectionEnded !== null && this.state.isElectionEnded !== undefined) {
       return this.state.isElectionEnded;
     }
     try {
@@ -381,14 +377,7 @@ class ElectionWeb3 {
           address: candidate[5],
         })
       }
-
-      candidates.sort((c1 ,c2) => {
-        const v1 = parseInt(c1.voteCount)
-        const v2 = parseInt(c2.voteCount)
-        const res = v1 - v2;
-        console.log(res)
-        return res
-      });
+      candidates.sort((c1 ,c2) => { return c2.voteCount-c1.voteCount });
       this.state.candidates = candidates;
       return candidates;
     } catch (error) {
