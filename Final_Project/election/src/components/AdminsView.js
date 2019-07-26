@@ -348,7 +348,10 @@ export default class AdminsView extends Component {
                   onChange={this.setRequestedVoterAddress}
                  />
               </Form.Group>
-              <Button
+            </Form>
+            }
+            {
+                            <Button
                 variant="primary"
                 type="submit"
                 disabled={false}
@@ -356,7 +359,6 @@ export default class AdminsView extends Component {
               >
                 {'Register Voter'}
               </Button>
-            </Form>
             }
           </Col>
           <Col>
