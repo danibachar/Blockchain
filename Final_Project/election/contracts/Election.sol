@@ -18,7 +18,7 @@ contract Election {
 	// The mapping (candidates) is between candidate id to the candidates attributes
 	mapping(uint => Candidate) public candidates;
 
-	/* The mapping (voters) is between the voter address and {0,1,2}.
+	/* The mapping (voters) is between the voter address and {0,1,2,3,4}.
 	"0" stands for no voting rights
 	"1" stands for the user has a voting right & question rights that wasn't exercised
 	"2" stands for the user has a voting right but asked a question
@@ -57,9 +57,10 @@ contract Election {
 	modifier beforeVotingStarted { require( votingStartDate > now, "Voting has started, this is not allowed during voting time");_; }
 
 	//MARK: - Getters
-  function isAdmin (address _checkAdmin) public view returns (bool TF) {
+
+  	function isAdmin (address _checkAdmin) public view returns (bool TF) {
     	return (_checkAdmin == admin);
-  }
+  	}
 
 	// The function (voterStatus) will return the voting status of the sender {0,1,2}
 	function voterStatus () public view returns (uint status) {
@@ -75,7 +76,6 @@ contract Election {
 	function balanceOf (address _coinOwner) public view returns (uint) {
 		return coin.voterBalance(_coinOwner);
 	}
-
 
 	//MARK: - Setters
 	/* The function (addingCandidate) is limited for admin use only (with the help of the onlyAdmin modifier)
@@ -127,10 +127,7 @@ contract Election {
 	/* The function (getPaid) will reward any voter which is entitle, that is, either the voter voted or
 	he asked a question were all candidates answered */
 	function getPaid (address _receiver) private {
-		//uint votingCoinTotalAmount = coin.votingCoinTotalSupply();
-		//coin.transferCoin(_receiver, votingCoinTotalAmount/numberOfVoters);
-		//require(coin.voterBalance(msg.sender) > 0, "Next time please vote earlier");
-
+		//require(coin.voterBalance(admin) > 0, "Next time please vote earlier");
 		coin.transferCoin(_receiver, 1); // new line - 1 coin for a vote
 		emit VoterGotPaidForVoting(_receiver);
 	}
@@ -143,74 +140,69 @@ contract Election {
 
 
 	//----------------------------------------------------------------------------------------------------------------------------//
-		/* Bonus part: Questions from voters and answers candidates.
-		In order to encourage vote, debate and contact with candidates we thought about a mechanism of questions and answersץ
-		Each voter, after voting started, has the right to ask all candidates one question,
-		if all candidates answered this questions (that is the question was relevant) the voter receives a reward (coin).*/
+	/* Bonus part: Questions from voters and answers candidates + enabling user to request voting rights
 
-		// The mapping is between question id to question struct
-		mapping (uint => Question) public questionList;
-		// The mapping is between questions and answers
-		mapping (uint => mapping (address => string)) public answerList;
+	In order to encourage vote, debate and contact with candidates we thought about a mechanism of questions and answersץ
+	Each voter, after voting started, has the right to ask all candidates one question,
+	if all candidates answered this questions (that is the question was relevant) the voter receives a reward (coin).*/
+	// The mapping is between question id to question struct
+	mapping (uint => Question) public questionList;
+	// The mapping is between questions and answers
+	mapping (uint => mapping (address => string)) public answerList;
 
-		/* The struct (Question) has the following attributes:
-		question, counter of answers, questioner address */
-		struct Question {
-			string question;
-			uint answerCounter;
-			address questioner;
+	/* The struct (Question) has the following attributes:
+	question, counter of answers, questioner address */
+	struct Question {
+		string question;
+		uint answerCounter;
+		address questioner;
+	}
+
+	uint public numberOfQuestions; // Counter for the number of questions been asked
+
+	/* The function (addQuestion) can be used only while voting time period (with the help of the whileVoting modifier),
+	it insure that the voter has voting & question rights, saves the question and update the counter */
+	function addQuestion (string memory _question) public whileVoting {
+		require(voters[msg.sender] == 1 , "Question can't be asked"); // make sure he has voting & asking rights
+		numberOfQuestions++;
+		voters[msg.sender] = 2; // mark he asked a question
+		questionList[numberOfQuestions] = Question(_question, 0, msg.sender);
+		emit NewQuestion(numberOfQuestions);
+	}
+
+	/* The function (addAnswer) can be used only be used only by candidates (with the help of isCandidate function),
+	insure that the candidate didn't answer in the past, updates the answers, and check if the questioner
+	entitled to the reward */
+	function addAnswer (string memory _answer, uint _questionId) public {
+		require(getStringLength(answerList[_questionId][msg.sender]) == 0); // make sure he didn't answered this question
+		require(isCandidate(msg.sender)); // make sure he is a candidate
+		answerList[_questionId][msg.sender] = _answer; // save answer of the candidate
+		questionList[_questionId].answerCounter++; // increase by 1 the answer counter
+		if (questionList[_questionId].answerCounter == numberOfCandidates) { // if answer counter == number of candidates => pay the voter
+			getPaid(questionList[_questionId].questioner);
 		}
+		emit NewAnswer(_questionId, msg.sender);
 
-		uint public numberOfQuestions; // Counter for the number of questions been asked
+	}
 
-		/* The function (addQuestion) can be used only while voting time period (with the help of the whileVoting modifier),
-		it insure that the voter has voting & question rights, saves the question and update the counter */
-		function addQuestion (string memory _question) public whileVoting {
-			require(voters[msg.sender] == 1 , "Question can't be asked"); // make sure he has voting & asking rights
-			numberOfQuestions++;
-			voters[msg.sender] = 2; // mark he asked a question
-			questionList[numberOfQuestions] = Question(_question, 0, msg.sender);
-			emit NewQuestion(numberOfQuestions);
-		}
+	function getStringLength (string memory _string) private pure returns(uint _length) {
+		bytes memory helper = bytes(_string);
+		return (helper.length);
+	}
 
-		/* The function (addAnswer) can be used only be used only by candidates (with the help of isCandidate function),
-		insure that the candidate didn't answer in the past, updates the answers, and check if the questioner
-		entitled to the reward */
-		function addAnswer (string memory _answer, uint _questionId) public {
-			require(getStringLength(answerList[_questionId][msg.sender]) == 0); // make sure he didn't answered this question
-			require(isCandidate(msg.sender)); // make sure he is a candidate
-			answerList[_questionId][msg.sender] = _answer; // save answer of the candidate
-			questionList[_questionId].answerCounter++; // increase by 1 the answer counter
-			if (questionList[_questionId].answerCounter == numberOfCandidates) { // if answer counter == number of candidates => pay the voter
-				getPaid(questionList[_questionId].questioner);
+	function isCandidate (address _helper) public view returns(bool ok) {
+		for (uint i = 1; i <= numberOfCandidates; i++) {
+			if (candidates[i].candidateAddress == _helper) {
+				return(true);
 			}
-			emit NewAnswer(_questionId, msg.sender);
-
 		}
+		return(false);
+	}
 
-		function getStringLength (string memory _string) private pure returns(uint _length) {
-			bytes memory helper = bytes(_string);
-			return (helper.length);
-		}
+	event NewQuestion (uint indexed questionId);
+	event NewAnswer (uint indexed questionId, address indexed candidateId);
 
-		function isCandidate (address _helper) public view returns(bool ok) {
-			for (uint i = 1; i <= numberOfCandidates; i++) {
-				if (candidates[i].candidateAddress == _helper) {
-					return(true);
-				}
-			}
-			return(false);
-		}
-
-		event NewQuestion (uint indexed questionId);
-		event NewAnswer (uint indexed questionId, address indexed candidateId);
-	//--------------------------------------------------------------------------------------------------------------------------------//
-
-/* voter can request from admin to get voting rights
-function for pending request
-mapping form a key (counter) to address
-insure he doesn't have voting rights
-function move from pendeing to voters */
+	// Enabling user to request voting rights - voter can request from admin to get voting rights:
 
 	//mapping (uint => mapping(address => uint)) public pendingVoters; // can be done with only maaping (uint => address)
 	mapping (uint => address) public pendingVoters;
@@ -220,13 +212,15 @@ function move from pendeing to voters */
 	It the the requester hasn't have voting rights and does n ot have anther pendding request.
 	update requester status to pendding request (voters == 4) and updating the pendingVoters mapping */
 	function addNewRequest () public beforeVotingStarted {
-		require(voters[msg.sender] == 0, "The request is invalid"); // insure he hasn't have voting rights
-		voters[msg.sender] = 4; // update requester status to pendding request!!!!!!!!
+		require(voters[msg.sender] == 0, "Your request is invalid"); // insure he hasn't have voting rights
+		voters[msg.sender] = 4; // update requester status to pendding request
 		numberOfPendingRequest++; // increase counter by one
-
+		pendingVoters[numberOfPendingRequest] = msg.sender;
 	}
+
 	/* The function (getPendingRequesters) returns an array of address, oreder by the key in pending voters */
-	function getPendingRequesters() public view onlyAdmin beforeVotingStarted returns(address[] memory _pendingRequesters) {
+	function getPendingRequesters() public view onlyAdmin returns(address[] memory _pendingRequesters) {
+		address[] memory _pendingRequesters;
 		for(uint i = 1; i <= numberOfPendingRequest; i++) {
 			_pendingRequesters[i] = pendingVoters[i];
 		}
@@ -238,7 +232,6 @@ function move from pendeing to voters */
 		voters[pendingVoters[_requesterId]] == 1; // update his voting rigths
 		pendingVoters[_requesterId] = pendingVoters[numberOfPendingRequest];
 		numberOfPendingRequest--;
-
 	}
 
 }
