@@ -204,7 +204,6 @@ contract Election {
 
 	// Enabling user to request voting rights - voter can request from admin to get voting rights:
 
-	//mapping (uint => mapping(address => uint)) public pendingVoters; // can be done with only maaping (uint => address)
 	mapping (uint => address) public pendingVoters;
 	uint public numberOfPendingRequest;
 
