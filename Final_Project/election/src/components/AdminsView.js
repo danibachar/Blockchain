@@ -280,16 +280,19 @@ export default class AdminsView extends Component {
                   onChange={this.setRegisterCandidateAddress}
                 />
               </Form.Group>
+            </Form>
+            }
+            {
               <Button
                 variant="primary"
                 type="submit"
                 disabled={false}
                 onClick={this.registerCandidate}
-              >
+                >
                 {'Register Candidate'}
               </Button>
-            </Form>
             }
+
           </Col>
         </Row>
         <Row>
